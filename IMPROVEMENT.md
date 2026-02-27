@@ -42,8 +42,8 @@ This document outlines an ambitious roadmap to take this video game sales predic
 ## 2. UI/Design
 
 ### Quick Wins
-- [ ] **Streamlit page config** — Use `st.set_page_config()` with proper title, favicon, and wide layout mode.
-- [ ] **Loading states** — Add `st.spinner()` around model loading and predictions so users know something is happening.
+- [x] **Streamlit page config** — Use `st.set_page_config()` with proper title, favicon, and wide layout mode.
+- [x] **Loading states** — Add `st.spinner()` around model loading and predictions so users know something is happening.
 - [x] **Better color palette** — Define a consistent color scheme (not just orange sidebar) using CSS variables. Consider a retro neon palette (dark background, neon green/pink/cyan accents).
 - [ ] **Responsive charts** — Replace static Matplotlib plots with Plotly everywhere for consistency and interactivity.
 
@@ -164,7 +164,7 @@ This document outlines an ambitious roadmap to take this video game sales predic
 ## 7. Deployment & DevOps
 
 ### Quick Wins
-- [ ] **Streamlit Cloud** — Deploy for free on [share.streamlit.io](https://share.streamlit.io) — just connect the GitHub repo.
+- [x] **Streamlit Cloud** — Deploy for free on [share.streamlit.io](https://share.streamlit.io) — just connect the GitHub repo.
 - [ ] **Secrets management** — Use `st.secrets` for any API keys instead of hardcoding.
 
 ### Medium Effort
@@ -214,7 +214,7 @@ This document outlines an ambitious roadmap to take this video game sales predic
 | ~~9~~ | UI | ~~Dark mode + retro neon theme~~ | Medium | Medium | **DONE** |
 | 10 | Data | Steam/IGDB API integration | High | Medium |
 | ~~11~~ | Code | ~~Unit tests (pytest)~~ | Medium | Medium | **DONE** |
-| 12 | Deploy | Streamlit Cloud deployment | High | Low |
+| ~~12~~ | Deploy | ~~Streamlit Cloud deployment~~ | High | Low | **DONE** |
 | 13 | Feature | What-if analysis tool | Medium | Medium |
 | 14 | Feature | Recommendation engine | High | Medium |
 | 15 | ML | Deep learning (TabNet/neural net) | Medium | High |
