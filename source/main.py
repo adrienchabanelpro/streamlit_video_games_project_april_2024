@@ -1,10 +1,6 @@
 # main.py
 import streamlit as st
-import os 
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
-import matplotlib.patches as patches
+import os
 import subprocess
 import random
 from style import apply_style
@@ -16,12 +12,8 @@ from modelisation import modelisation
 from perspectives import perspectives
 from perception import perception
 from prediction import prediction_page
-from analyse_avis_utilisateurs import predict_user_reviews
-import plotly.graph_objects as go
-import base64
-from io import BytesIO
-from PIL import Image
 
+st.set_page_config(page_title="Prediction Jeux Video", page_icon="🎮", layout="wide")
 
 # Appliquer le style
 apply_style()
@@ -84,5 +76,6 @@ elif page == "Jeu Surprise":
     if st.button("Clique ICI"):
     # Utiliser random.choices avec des poids égaux
         game_choice = random.choices(['casse_brique.py', 'snake.py'], weights=[1, 1], k=1)[0]
-        os.system(f'python {game_choice}')
-    #st.write(f"Le jeu {game_choice.split('.')[0]} se lance dans une nouvelle fenêtre.")
+        game_path = os.path.join(os.path.dirname(__file__), game_choice)
+        subprocess.Popen(['python', game_path])
+        st.write(f"Le jeu {game_choice.split('.')[0]} se lance dans une nouvelle fenêtre.")
