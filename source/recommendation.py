@@ -59,7 +59,16 @@ def _find_similar(
 
     top_indices = np.argsort(similarities)[::-1][:n]
     result = df.iloc[top_indices][
-        ["Name", "Platform", "Genre", "Publisher", "Year", "Global_Sales", "meta_score", "user_review"]
+        [
+            "Name",
+            "Platform",
+            "Genre",
+            "Publisher",
+            "Year",
+            "Global_Sales",
+            "meta_score",
+            "user_review",
+        ]
     ].copy()
     result["Similarite"] = [f"{similarities[i]:.3f}" for i in top_indices]
     return result.reset_index(drop=True)
@@ -142,15 +151,17 @@ def recommendation_page():
 
     st.subheader("Jeux similaires")
     st.dataframe(
-        similar.rename(columns={
-            "Name": "Jeu",
-            "Platform": "Plateforme",
-            "Publisher": "Editeur",
-            "Year": "Annee",
-            "Global_Sales": "Ventes (M)",
-            "meta_score": "Metacritic",
-            "user_review": "Score utilisateur",
-        }),
+        similar.rename(
+            columns={
+                "Name": "Jeu",
+                "Platform": "Plateforme",
+                "Publisher": "Editeur",
+                "Year": "Annee",
+                "Global_Sales": "Ventes (M)",
+                "meta_score": "Metacritic",
+                "user_review": "Score utilisateur",
+            }
+        ),
         use_container_width=True,
         hide_index=True,
     )

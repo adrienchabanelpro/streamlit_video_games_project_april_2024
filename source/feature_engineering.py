@@ -1,16 +1,15 @@
 import os
+
+import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
-import pandas as pd
 
-_BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
+_BASE_DIR = os.path.join(os.path.dirname(__file__), "..")
 
 
 @st.cache_data
 def _load_feature_data():
-    return pd.read_csv(os.path.join(_BASE_DIR, 'data', 'df_topfeats.csv'))
-
-
+    return pd.read_csv(os.path.join(_BASE_DIR, "data", "df_topfeats.csv"))
 
 
 def feature_engineering():
@@ -20,11 +19,13 @@ def feature_engineering():
 
     # Afficher le GIF depuis Giphy
     gif_url = "https://giphy.com/embed/QJDOwyyvgIcPS"
-    components.html(f"""
+    components.html(
+        f"""
     <iframe src="{gif_url}" width="480" height="480" style="border:0;" frameBorder="0" class="giphy-embed" allowFullScreen></iframe>
     <p><a href="https://giphy.com/gifs/arcade-street-fighter-QJDOwyyvgIcPS">via GIPHY</a></p>
-    """, height=500)
-
+    """,
+        height=500,
+    )
 
     # Définir les sections
     st.header("Dataset Initial")
@@ -47,7 +48,6 @@ def feature_engineering():
     - Application du OneHotEncoder sur les variables catégorielles ('Publisher') et sur les autres variables catégorielles.  
     - Normalisation de toutes les autres colonnes numériques.
     """)
-
 
     st.header("Normalisation et Encodage")
     st.markdown("""
@@ -108,7 +108,6 @@ def feature_engineering():
 
     Après encodage, ce dataset comptait toujours 14 500 entrées mais 576 colonnes.
     """)
-
 
     data = _load_feature_data()
     st.write(data)

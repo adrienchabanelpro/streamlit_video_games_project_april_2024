@@ -1,10 +1,10 @@
 import os
-import streamlit as st
+
 import pandas as pd
+import streamlit as st
 from transformers import pipeline
 
-
-_BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
+_BASE_DIR = os.path.join(os.path.dirname(__file__), "..")
 _MODEL_NAME = "distilbert-base-uncased-finetuned-sst-2-english"
 
 

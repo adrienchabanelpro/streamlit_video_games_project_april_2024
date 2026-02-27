@@ -1,15 +1,15 @@
 # presentation.py
 import os
-import streamlit as st
-from PIL import Image
-import pandas as pd
 
-_BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
+import pandas as pd
+import streamlit as st
+
+_BASE_DIR = os.path.join(os.path.dirname(__file__), "..")
 
 
 @st.cache_data
 def _load_presentation_data():
-    return pd.read_csv(os.path.join(_BASE_DIR, 'data', 'Ventes_jeux_video_final.csv'))
+    return pd.read_csv(os.path.join(_BASE_DIR, "data", "Ventes_jeux_video_final.csv"))
 
 
 def presentation_et_objectif():
@@ -17,8 +17,8 @@ def presentation_et_objectif():
     base_path = os.path.dirname(__file__)
 
     # Construire les chemins absolus pour les images
-    image_path1 = os.path.join(base_path, '..', 'images', 'image_pres.png')
-    image_path2 = os.path.join(base_path, '..', 'images', 'street.png')
+    image_path1 = os.path.join(base_path, "..", "images", "image_pres.png")
+    image_path2 = os.path.join(base_path, "..", "images", "street.png")
 
     # Vérifier et afficher les images
     for image_path in [image_path1, image_path2]:
@@ -67,6 +67,5 @@ def presentation_et_objectif():
 
     # Charger les données
     df = _load_presentation_data()
-    st.write('Dataset après scrapping')
+    st.write("Dataset après scrapping")
     st.write(df)
-

@@ -3,7 +3,6 @@
 import numpy as np
 import pandas as pd
 import pytest
-
 from train_model import (
     _compute_metrics,
     _lookup_cumulative,
@@ -34,9 +33,7 @@ class TestLoadAndCleanData:
         assert "Rank" not in df.columns
         assert "Name" not in df.columns
 
-    def test_drops_rows_with_missing_publisher_or_year(
-        self, sample_raw_df, tmp_path
-    ):
+    def test_drops_rows_with_missing_publisher_or_year(self, sample_raw_df, tmp_path):
         csv_path = tmp_path / "data.csv"
         sample_raw_df.to_csv(csv_path, index=False)
         df = load_and_clean_data(csv_path)

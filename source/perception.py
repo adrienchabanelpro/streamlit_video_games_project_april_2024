@@ -1,10 +1,11 @@
-import streamlit as st
-import os
-import plotly.graph_objects as go
 import base64
+import os
 from io import BytesIO
-from PIL import Image
+
+import plotly.graph_objects as go
+import streamlit as st
 from analyse_avis_utilisateurs import predict_user_reviews
+from PIL import Image
 
 
 def perception():
@@ -16,16 +17,13 @@ def perception():
     )
     uploaded_file = st.file_uploader("Choisissez un fichier CSV", type="csv")
     st.write(
-        "IMPORTANT: Le fichier CSV doit avoir une colonne nommee "
-        "'user_review' en langue anglaise."
+        "IMPORTANT: Le fichier CSV doit avoir une colonne nommee 'user_review' en langue anglaise."
     )
 
     if uploaded_file is not None:
         if st.button("Lancer la prediction"):
             with st.spinner("Analyse des avis avec DistilBERT..."):
-                data, positive_percentage, negative_percentage = (
-                    predict_user_reviews(uploaded_file)
-                )
+                data, positive_percentage, negative_percentage = predict_user_reviews(uploaded_file)
 
             if data is not None and positive_percentage is not None:
                 # --- Summary metrics ---
@@ -44,9 +42,7 @@ def perception():
                 # --- Per-review details ---
                 st.subheader("Detail des predictions")
                 display_df = data[["user_review", "sentiment", "confidence"]].copy()
-                display_df["confidence"] = display_df["confidence"].apply(
-                    lambda x: f"{x:.1%}"
-                )
+                display_df["confidence"] = display_df["confidence"].apply(lambda x: f"{x:.1%}")
                 display_df.columns = ["Avis", "Sentiment", "Confiance"]
                 st.dataframe(display_df, use_container_width=True, hide_index=True)
 
@@ -87,19 +83,14 @@ def _display_gauge(positive_percentage: float) -> None:
             blue = 0
         return f"rgba({red},{green},{blue},{alpha})"
 
-    image_path = os.path.join(
-        os.path.dirname(__file__), "..", "images", "street_fighter2.png"
-    )
+    image_path = os.path.join(os.path.dirname(__file__), "..", "images", "street_fighter2.png")
     if not os.path.exists(image_path):
         st.warning("Image street_fighter2.png introuvable.")
         return
 
     encoded_image = _pil_to_base64(image_path)
 
-    steps = [
-        {"range": [i, i + 1], "color": _get_color(i, alpha=0.7)}
-        for i in range(101)
-    ]
+    steps = [{"range": [i, i + 1], "color": _get_color(i, alpha=0.7)} for i in range(101)]
 
     fig = go.Figure(
         go.Indicator(

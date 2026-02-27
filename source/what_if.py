@@ -1,12 +1,9 @@
 """What-if analysis: interactive exploration of how each feature impacts predictions."""
 
-import os
-
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-
 from prediction import (
     _NUMERICAL_FEATURES,
     _is_log_transformed,
@@ -19,10 +16,18 @@ from prediction import (
 
 
 def _predict_single(
-    lgb_model, xgb_model, cb_model, scaler, encoder,
+    lgb_model,
+    xgb_model,
+    cb_model,
+    scaler,
+    encoder,
     train_stats: dict,
-    genre: str, platform: str, publisher: str,
-    year: int, meta_score: float, user_review: float,
+    genre: str,
+    platform: str,
+    publisher: str,
+    year: int,
+    meta_score: float,
+    user_review: float,
 ) -> float:
     """Build features and run ensemble prediction for a single input."""
     input_data = {
@@ -103,13 +108,19 @@ def what_if_page():
     col3, col4 = st.columns(2)
     with col3:
         base_meta = st.number_input(
-            "Score Metacritic (base)", min_value=0.0, max_value=100.0,
-            value=train_stats["meta_score_mean"], format="%.0f",
+            "Score Metacritic (base)",
+            min_value=0.0,
+            max_value=100.0,
+            value=train_stats["meta_score_mean"],
+            format="%.0f",
         )
     with col4:
         base_user = st.number_input(
-            "Score utilisateur (base)", min_value=0.0, max_value=100.0,
-            value=train_stats["user_review_mean"], format="%.1f",
+            "Score utilisateur (base)",
+            min_value=0.0,
+            max_value=100.0,
+            value=train_stats["user_review_mean"],
+            format="%.1f",
         )
 
     st.markdown("---")
@@ -141,22 +152,33 @@ def what_if_page():
                 yr = int(val) if sweep_var == "Year" else year
 
                 pred = _predict_single(
-                    lgb_model, xgb_model, cb_model, scaler, encoder,
-                    train_stats, genre, platform, publisher,
-                    yr, meta, user,
+                    lgb_model,
+                    xgb_model,
+                    cb_model,
+                    scaler,
+                    encoder,
+                    train_stats,
+                    genre,
+                    platform,
+                    publisher,
+                    yr,
+                    meta,
+                    user,
                 )
                 predictions.append(pred)
 
         # --- Plot ---
         fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=sweep_range,
-            y=predictions,
-            mode="lines+markers",
-            name="Ventes predites",
-            line=dict(color="#00FFCC", width=3),
-            marker=dict(size=4),
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=sweep_range,
+                y=predictions,
+                mode="lines+markers",
+                name="Ventes predites",
+                line=dict(color="#00FFCC", width=3),
+                marker=dict(size=4),
+            )
+        )
 
         # Mark the base value
         if sweep_var == "meta_score":
@@ -167,17 +189,28 @@ def what_if_page():
             base_val = year
 
         base_pred = _predict_single(
-            lgb_model, xgb_model, cb_model, scaler, encoder,
-            train_stats, genre, platform, publisher,
-            year, base_meta, base_user,
+            lgb_model,
+            xgb_model,
+            cb_model,
+            scaler,
+            encoder,
+            train_stats,
+            genre,
+            platform,
+            publisher,
+            year,
+            base_meta,
+            base_user,
         )
-        fig.add_trace(go.Scatter(
-            x=[base_val],
-            y=[base_pred],
-            mode="markers",
-            name="Valeur de base",
-            marker=dict(color="#FF6EC7", size=14, symbol="star"),
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=[base_val],
+                y=[base_pred],
+                mode="markers",
+                name="Valeur de base",
+                marker=dict(color="#FF6EC7", size=14, symbol="star"),
+            )
+        )
 
         fig.update_layout(
             title=f"Impact de {x_label} sur les ventes predites",

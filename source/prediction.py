@@ -1,17 +1,18 @@
 import json
 import os
-import streamlit as st
-import numpy as np
-import pandas as pd
-import lightgbm as lgb
-import xgboost as xgb
-import catboost as cb
-import joblib
 import warnings
 
-warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
+import catboost as cb
+import joblib
+import lightgbm as lgb
+import numpy as np
+import pandas as pd
+import streamlit as st
+import xgboost as xgb
 
-_BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
+warnings.simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
+
+_BASE_DIR = os.path.join(os.path.dirname(__file__), "..")
 
 # Feature order must match training script exactly
 _NUMERICAL_FEATURES = [
@@ -31,39 +32,33 @@ _NUMERICAL_FEATURES = [
 @st.cache_resource
 def load_models():
     """Load all 3 ensemble models (LightGBM, XGBoost, CatBoost)."""
-    lgb_model = lgb.Booster(
-        model_file=os.path.join(_BASE_DIR, 'reports', 'model_v2_optuna.txt')
-    )
+    lgb_model = lgb.Booster(model_file=os.path.join(_BASE_DIR, "reports", "model_v2_optuna.txt"))
     xgb_model = xgb.XGBRegressor()
-    xgb_model.load_model(
-        os.path.join(_BASE_DIR, 'models', 'model_v2_xgboost.json')
-    )
+    xgb_model.load_model(os.path.join(_BASE_DIR, "models", "model_v2_xgboost.json"))
     cb_model = cb.CatBoostRegressor()
-    cb_model.load_model(
-        os.path.join(_BASE_DIR, 'models', 'model_v2_catboost.cbm')
-    )
+    cb_model.load_model(os.path.join(_BASE_DIR, "models", "model_v2_catboost.cbm"))
     return lgb_model, xgb_model, cb_model
 
 
 @st.cache_resource
 def load_numerical_transformer():
-    return joblib.load(os.path.join(_BASE_DIR, 'models', 'scaler_v2.joblib'))
+    return joblib.load(os.path.join(_BASE_DIR, "models", "scaler_v2.joblib"))
 
 
 @st.cache_resource
 def load_target_encoder():
-    return joblib.load(os.path.join(_BASE_DIR, 'models', 'target_encoder_v2.joblib'))
+    return joblib.load(os.path.join(_BASE_DIR, "models", "target_encoder_v2.joblib"))
 
 
 @st.cache_resource
 def load_feature_means():
-    return joblib.load(os.path.join(_BASE_DIR, 'models', 'feature_means_v2.joblib'))
+    return joblib.load(os.path.join(_BASE_DIR, "models", "feature_means_v2.joblib"))
 
 
 @st.cache_data
 def _is_log_transformed() -> bool:
     """Check if the trained model used log-transform on the target."""
-    log_path = os.path.join(_BASE_DIR, 'reports', 'training_log.json')
+    log_path = os.path.join(_BASE_DIR, "reports", "training_log.json")
     if os.path.exists(log_path):
         with open(log_path) as f:
             return json.load(f).get("log_transform", False)
@@ -82,41 +77,33 @@ def _lookup_cumulative(cumsum_dict: dict, category: str, year: int) -> float:
 
 
 def get_input(train_stats: dict):
-    st.sidebar.header('Selection des entrees')
+    st.sidebar.header("Selection des entrees")
 
     input_data = {}
-    publisher_input = st.sidebar.selectbox(
-        "Selectionnez l'editeur", train_stats['publishers']
-    )
-    genre_input = st.sidebar.selectbox(
-        'Selectionnez le genre', train_stats['genres']
-    )
-    platform_input = st.sidebar.selectbox(
-        'Selectionnez la plateforme', train_stats['platforms']
-    )
+    publisher_input = st.sidebar.selectbox("Selectionnez l'editeur", train_stats["publishers"])
+    genre_input = st.sidebar.selectbox("Selectionnez le genre", train_stats["genres"])
+    platform_input = st.sidebar.selectbox("Selectionnez la plateforme", train_stats["platforms"])
     years = list(range(1980, 2031))
-    year_input = st.sidebar.selectbox(
-        "Selectionnez l'annee", years, index=years.index(2024)
-    )
-    input_data['Year'] = year_input
+    year_input = st.sidebar.selectbox("Selectionnez l'annee", years, index=years.index(2024))
+    input_data["Year"] = year_input
 
     meta_input = st.sidebar.number_input(
-        'Selectionnez le score Metacritic',
+        "Selectionnez le score Metacritic",
         min_value=0.0,
         max_value=100.0,
-        value=train_stats['meta_score_mean'],
+        value=train_stats["meta_score_mean"],
         format="%.0f",
     )
-    input_data['meta_score'] = meta_input
+    input_data["meta_score"] = meta_input
 
     user_input = st.sidebar.number_input(
-        'Selectionnez le score utilisateur',
+        "Selectionnez le score utilisateur",
         min_value=0.0,
         max_value=100.0,
-        value=train_stats['user_review_mean'],
+        value=train_stats["user_review_mean"],
         format="%.1f",
     )
-    input_data['user_review'] = user_input
+    input_data["user_review"] = user_input
 
     return publisher_input, genre_input, platform_input, input_data
 
@@ -129,35 +116,33 @@ def get_features(
 ) -> pd.DataFrame:
     """Build feature vector using pre-computed training statistics."""
     # Mean sales by genre/platform from training data
-    input_data['Global_Sales_mean_genre'] = train_stats['genre_means'].get(
-        genre_input, train_stats['global_sales_mean']
+    input_data["Global_Sales_mean_genre"] = train_stats["genre_means"].get(
+        genre_input, train_stats["global_sales_mean"]
     )
-    input_data['Global_Sales_mean_platform'] = train_stats['platform_means'].get(
-        platform_input, train_stats['global_sales_mean']
+    input_data["Global_Sales_mean_platform"] = train_stats["platform_means"].get(
+        platform_input, train_stats["global_sales_mean"]
     )
 
     # Interaction features
-    input_data['Year_Global_Sales_mean_genre'] = (
-        input_data['Year'] * input_data['Global_Sales_mean_genre']
+    input_data["Year_Global_Sales_mean_genre"] = (
+        input_data["Year"] * input_data["Global_Sales_mean_genre"]
     )
-    input_data['Year_Global_Sales_mean_platform'] = (
-        input_data['Year'] * input_data['Global_Sales_mean_platform']
+    input_data["Year_Global_Sales_mean_platform"] = (
+        input_data["Year"] * input_data["Global_Sales_mean_platform"]
     )
 
     # Cumulative sales from training data
-    input_data['Cumulative_Sales_Genre'] = _lookup_cumulative(
-        train_stats['cumsum_genre'], genre_input, input_data['Year']
+    input_data["Cumulative_Sales_Genre"] = _lookup_cumulative(
+        train_stats["cumsum_genre"], genre_input, input_data["Year"]
     )
-    input_data['Cumulative_Sales_Platform'] = _lookup_cumulative(
-        train_stats['cumsum_platform'], platform_input, input_data['Year']
+    input_data["Cumulative_Sales_Platform"] = _lookup_cumulative(
+        train_stats["cumsum_platform"], platform_input, input_data["Year"]
     )
 
     return pd.DataFrame(input_data, index=[0])
 
 
-def prepare_for_prediction(
-    df_input: pd.DataFrame, publisher_input: str
-) -> pd.DataFrame:
+def prepare_for_prediction(df_input: pd.DataFrame, publisher_input: str) -> pd.DataFrame:
     """Target-encode Publisher, scale features, return prediction-ready df."""
     encoder = load_target_encoder()
     scaler = load_numerical_transformer()
@@ -167,9 +152,7 @@ def prepare_for_prediction(
     df_input["Publisher_encoded"] = encoder.transform(pub_df)["Publisher"].values
 
     # Scale all numerical features
-    df_input[_NUMERICAL_FEATURES] = scaler.transform(
-        df_input[_NUMERICAL_FEATURES]
-    )
+    df_input[_NUMERICAL_FEATURES] = scaler.transform(df_input[_NUMERICAL_FEATURES])
 
     return df_input
 
@@ -223,9 +206,7 @@ def prediction_page():
     )
 
     # Arcade machine image
-    image_path = os.path.join(
-        os.path.dirname(__file__), '..', 'images', 'street_arcade.jpg'
-    )
+    image_path = os.path.join(os.path.dirname(__file__), "..", "images", "street_arcade.jpg")
     if os.path.exists(image_path):
         st.image(image_path, width=1000)
     else:
@@ -235,17 +216,13 @@ def prediction_page():
         )
 
     # User inputs (dropdowns populated from training stats)
-    publisher_input, genre_input, platform_input, input_data = get_input(
-        train_stats
-    )
+    publisher_input, genre_input, platform_input, input_data = get_input(train_stats)
 
-    if st.sidebar.button('Predire'):
+    if st.sidebar.button("Predire"):
         with st.spinner("Calcul de la prediction..."):
             try:
                 # Build feature vector from training stats
-                df_input = get_features(
-                    input_data, train_stats, genre_input, platform_input
-                )
+                df_input = get_features(input_data, train_stats, genre_input, platform_input)
 
                 # Encode + scale
                 df_ready = prepare_for_prediction(df_input, publisher_input)
@@ -269,15 +246,17 @@ def prediction_page():
                 )
 
                 # Export prediction as CSV
-                export_df = pd.DataFrame({
-                    "Publisher": [publisher_input],
-                    "Genre": [genre_input],
-                    "Platform": [platform_input],
-                    "Year": [input_data["Year"]],
-                    "meta_score": [input_data["meta_score"]],
-                    "user_review": [input_data["user_review"]],
-                    "Predicted_Sales_M": [round(user_pred[0], 4)],
-                })
+                export_df = pd.DataFrame(
+                    {
+                        "Publisher": [publisher_input],
+                        "Genre": [genre_input],
+                        "Platform": [platform_input],
+                        "Year": [input_data["Year"]],
+                        "meta_score": [input_data["meta_score"]],
+                        "user_review": [input_data["user_review"]],
+                        "Predicted_Sales_M": [round(user_pred[0], 4)],
+                    }
+                )
                 st.download_button(
                     "Telecharger la prediction (CSV)",
                     export_df.to_csv(index=False),
@@ -321,9 +300,7 @@ def prediction_page():
                             "meta_score": float(row["meta_score"]),
                             "user_review": float(row["user_review"]),
                         }
-                        df_feat = get_features(
-                            inp, train_stats, row["Genre"], row["Platform"]
-                        )
+                        df_feat = get_features(inp, train_stats, row["Genre"], row["Platform"])
                         df_r = prepare_for_prediction(df_feat, row["Publisher"])
                         X = df_r[_NUMERICAL_FEATURES]
                         p = (

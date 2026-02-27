@@ -4,7 +4,6 @@ import io
 
 import pandas as pd
 import pytest
-
 from analyse_avis_utilisateurs import predict_user_reviews
 
 
@@ -31,9 +30,7 @@ class TestPredictUserReviews:
         assert neg == pytest.approx(0.0)
 
     def test_negative_review_detected(self):
-        f = self._make_csv_file(
-            ["Terrible game, awful graphics, worst game ever."]
-        )
+        f = self._make_csv_file(["Terrible game, awful graphics, worst game ever."])
         data, pos, neg = predict_user_reviews(f)
         assert data is not None
         assert neg == pytest.approx(100.0)

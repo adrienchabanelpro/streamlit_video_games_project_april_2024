@@ -21,3 +21,5 @@ catboost
 transformers
 torch
 pytest
+ruff
+pre-commit

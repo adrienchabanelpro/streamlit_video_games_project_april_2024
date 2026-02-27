@@ -2,7 +2,6 @@
 
 import pandas as pd
 import pytest
-
 from prediction import _lookup_cumulative, get_features
 
 
@@ -58,9 +57,7 @@ class TestGetFeatures:
 
     def test_unknown_genre_uses_global_mean(self, train_stats_fixture):
         input_data = {"Year": 2015, "meta_score": 85.0, "user_review": 8.5}
-        result = get_features(
-            input_data, train_stats_fixture, "UnknownGenre", "PS4"
-        )
+        result = get_features(input_data, train_stats_fixture, "UnknownGenre", "PS4")
         assert result["Global_Sales_mean_genre"].iloc[0] == pytest.approx(
             train_stats_fixture["global_sales_mean"]
         )
@@ -69,9 +66,7 @@ class TestGetFeatures:
         input_data = {"Year": 2015, "meta_score": 85.0, "user_review": 8.5}
         result = get_features(input_data, train_stats_fixture, "Action", "PS4")
         expected = 2015 * train_stats_fixture["genre_means"]["Action"]
-        assert result["Year_Global_Sales_mean_genre"].iloc[0] == pytest.approx(
-            expected
-        )
+        assert result["Year_Global_Sales_mean_genre"].iloc[0] == pytest.approx(expected)
 
     def test_cumulative_sales_lookup(self, train_stats_fixture):
         input_data = {"Year": 2014, "meta_score": 85.0, "user_review": 8.5}

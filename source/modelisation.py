@@ -1,14 +1,14 @@
 import json
 import os
-import streamlit as st
+
 import lightgbm as lgb
 import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
+import streamlit as st
 from sklearn.datasets import fetch_california_housing
 from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import train_test_split
 
-_BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
+_BASE_DIR = os.path.join(os.path.dirname(__file__), "..")
 
 
 def modelisation():
@@ -37,13 +37,22 @@ def modelisation():
     """)
 
     # Schéma de fonctionnement de LightGBM
-    chemin_image = os.path.join(os.path.dirname(__file__), '..', 'images', 'A_stylized_diagram_illustrating_the_workflow_of_Li.jpg')
+    chemin_image = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "images",
+        "A_stylized_diagram_illustrating_the_workflow_of_Li.jpg",
+    )
 
     st.subheader("Schéma de Fonctionnement 🔍")
     if os.path.exists(chemin_image):
-        st.image(chemin_image, caption="Schéma de Fonctionnement de LightGBM", use_container_width=True)
+        st.image(
+            chemin_image, caption="Schéma de Fonctionnement de LightGBM", use_container_width=True
+        )
     else:
-        st.write(f"Erreur : l'image {os.path.basename(chemin_image)} est introuvable. Vérifiez le dossier images/.")
+        st.write(
+            f"Erreur : l'image {os.path.basename(chemin_image)} est introuvable. Vérifiez le dossier images/."
+        )
 
     # Avantages de LightGBM
     st.header("Avantages de LightGBM 💡")
@@ -58,18 +67,28 @@ def modelisation():
     # Schéma des avantages
     st.subheader("Avantages en un coup d'œil 📊")
     import plotly.express as px
-    adv_df = pd.DataFrame({
-        "Avantage": ["Vitesse", "Precision", "Scalabilite", "Support des Valeurs Manquantes"],
-        "Importance (%)": [90, 85, 95, 80],
-    })
+
+    adv_df = pd.DataFrame(
+        {
+            "Avantage": ["Vitesse", "Precision", "Scalabilite", "Support des Valeurs Manquantes"],
+            "Importance (%)": [90, 85, 95, 80],
+        }
+    )
     fig_adv = px.bar(
-        adv_df, x="Importance (%)", y="Avantage", orientation="h",
-        color="Importance (%)", color_continuous_scale="Teal",
+        adv_df,
+        x="Importance (%)",
+        y="Avantage",
+        orientation="h",
+        color="Importance (%)",
+        color_continuous_scale="Teal",
         title="Avantages de LightGBM",
     )
     fig_adv.update_layout(
-        template="plotly_dark", paper_bgcolor="#0D0D0D", plot_bgcolor="#1A1A2E",
-        font=dict(color="#E0E0E0"), showlegend=False,
+        template="plotly_dark",
+        paper_bgcolor="#0D0D0D",
+        plot_bgcolor="#1A1A2E",
+        font=dict(color="#E0E0E0"),
+        showlegend=False,
     )
     st.plotly_chart(fig_adv, use_container_width=True)
 
@@ -83,7 +102,7 @@ def modelisation():
     # Chargement des données
     data = fetch_california_housing()
     X = pd.DataFrame(data.data, columns=data.feature_names)
-    y = pd.Series(data.target, name='target')
+    y = pd.Series(data.target, name="target")
 
     # Division des données
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -98,30 +117,42 @@ def modelisation():
         mse = mean_squared_error(y_test, y_pred)
 
     # Affichage des résultats
-    st.write(f"Erreur Quadratique Moyenne (MSE) avec profondeur {max_depth} et taux d'apprentissage {learning_rate}: {mse:.2f}")
+    st.write(
+        f"Erreur Quadratique Moyenne (MSE) avec profondeur {max_depth} et taux d'apprentissage {learning_rate}: {mse:.2f}"
+    )
 
     # Comparaison des valeurs prédites et réelles
     import plotly.graph_objects as go
+
     fig_scatter = go.Figure()
-    fig_scatter.add_trace(go.Scatter(
-        x=y_test, y=y_pred, mode="markers",
-        marker=dict(color="#00FFCC", opacity=0.4, size=5),
-        name="Predictions",
-    ))
-    fig_scatter.add_trace(go.Scatter(
-        x=[y_test.min(), y_test.max()], y=[y_test.min(), y_test.max()],
-        mode="lines", line=dict(color="#FF6EC7", dash="dash", width=2),
-        name="Ideal",
-    ))
+    fig_scatter.add_trace(
+        go.Scatter(
+            x=y_test,
+            y=y_pred,
+            mode="markers",
+            marker=dict(color="#00FFCC", opacity=0.4, size=5),
+            name="Predictions",
+        )
+    )
+    fig_scatter.add_trace(
+        go.Scatter(
+            x=[y_test.min(), y_test.max()],
+            y=[y_test.min(), y_test.max()],
+            mode="lines",
+            line=dict(color="#FF6EC7", dash="dash", width=2),
+            name="Ideal",
+        )
+    )
     fig_scatter.update_layout(
         title="Comparaison des valeurs reelles et predites",
         xaxis_title="Valeurs reelles",
         yaxis_title="Valeurs predites",
-        template="plotly_dark", paper_bgcolor="#0D0D0D", plot_bgcolor="#1A1A2E",
+        template="plotly_dark",
+        paper_bgcolor="#0D0D0D",
+        plot_bgcolor="#1A1A2E",
         font=dict(color="#E0E0E0"),
     )
     st.plotly_chart(fig_scatter, use_container_width=True)
-
 
     # Conclusion
     st.header("Conclusion 🎯")
@@ -141,16 +172,15 @@ def modelisation():
             LGBMRegressor MAE : Moyenne = 0.0132, Écart-type = 0.0013
 """)
 
-
     # ------------------------------------------------------------------
     # V2 Model: Optuna + SHAP results
     # ------------------------------------------------------------------
     st.markdown("---")
     st.header("Modele v2 : Optimisation Optuna + SHAP")
 
-    training_log_path = os.path.join(_BASE_DIR, 'reports', 'training_log.json')
-    shap_summary_path = os.path.join(_BASE_DIR, 'reports', 'shap_summary.png')
-    shap_bar_path = os.path.join(_BASE_DIR, 'reports', 'shap_bar.png')
+    training_log_path = os.path.join(_BASE_DIR, "reports", "training_log.json")
+    shap_summary_path = os.path.join(_BASE_DIR, "reports", "shap_summary.png")
+    shap_bar_path = os.path.join(_BASE_DIR, "reports", "shap_bar.png")
 
     if os.path.exists(training_log_path):
         with open(training_log_path) as f:
@@ -224,10 +254,9 @@ def modelisation():
                 st.caption("10 features, split temporel")
 
         # Baseline comparison
-        baseline_r2 = metrics_lgb.get('baseline_r2', 'N/A')
-        baseline_rmse = metrics_lgb.get('baseline_rmse', 'N/A')
-        st.write(f"**Baseline (predicteur moyen) — R2 : {baseline_r2}, "
-                 f"RMSE : {baseline_rmse}**")
+        baseline_r2 = metrics_lgb.get("baseline_r2", "N/A")
+        baseline_rmse = metrics_lgb.get("baseline_rmse", "N/A")
+        st.write(f"**Baseline (predicteur moyen) — R2 : {baseline_r2}, RMSE : {baseline_rmse}**")
 
         # --- Best hyperparameters ---
         st.subheader("Meilleurs hyperparametres (Optuna)")
@@ -287,11 +316,11 @@ def modelisation():
         )
 
     # Ajout d'un GIF fun lié aux jeux vidéo
-    st.markdown("""
+    st.markdown(
+        """
     <div style="display: flex; justify-content: center;">
         <iframe src="https://giphy.com/embed/mHv5sLKI1b1I8r4wmp" width="680" height="370" frameBorder="0" class="giphy-embed" allowFullScreen></iframe>
     </div>
-    """, unsafe_allow_html=True)
-
-
-        
+    """,
+        unsafe_allow_html=True,
+    )

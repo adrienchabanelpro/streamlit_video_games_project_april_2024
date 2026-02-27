@@ -1,5 +1,6 @@
-import pygame
 import sys
+
+import pygame
 
 # Initialisation de Pygame avec gestion d'erreur
 try:
@@ -36,6 +37,7 @@ except FileNotFoundError:
     print(f"Police {font_path} introuvable, chargement de la police par défaut.")
     font = pygame.font.SysFont(None, 20)  # Police de secours
 
+
 # Classe pour la brique
 class Brick(pygame.sprite.Sprite):
     def __init__(self, x, y, color):
@@ -49,6 +51,7 @@ class Brick(pygame.sprite.Sprite):
     def draw(self, surface):
         surface.blit(self.image, self.rect.topleft)
         pygame.draw.rect(surface, WHITE, self.rect, 2)
+
 
 # Classe pour la raquette
 class Paddle(pygame.sprite.Sprite):
@@ -66,6 +69,7 @@ class Paddle(pygame.sprite.Sprite):
             self.rect.x -= 5
         if keys[pygame.K_RIGHT] and self.rect.x < SCREEN_WIDTH - PADDLE_WIDTH:
             self.rect.x += 5
+
 
 # Classe pour la balle
 class Ball(pygame.sprite.Sprite):
@@ -103,11 +107,13 @@ class Ball(pygame.sprite.Sprite):
             if len(bricks) == 0:
                 show_you_win()
 
+
 # Fonction pour afficher du texte
 def draw_text(surface, text, font, color, rect):
     font_surface = font.render(text, True, color)
     font_rect = font_surface.get_rect(center=rect.center)
     surface.blit(font_surface, font_rect.topleft)
+
 
 # Fonction pour afficher Game Over
 def show_game_over():
@@ -125,6 +131,7 @@ def show_game_over():
     pygame.display.flip()
     wait_for_input()
 
+
 # Fonction pour attendre une action de l'utilisateur
 def wait_for_input():
     while True:
@@ -139,15 +146,19 @@ def wait_for_input():
                 if restart_button.collidepoint(event.pos):
                     main()
 
+
 # Création des briques
 def create_bricks():
     bricks = pygame.sprite.Group()
     colors = [RED, GREEN, BLUE]
     for i in range(9):
         for j in range(5):
-            brick = Brick(i * (BRICK_WIDTH + 13) + 35, j * (BRICK_HEIGHT + 10) + 35, colors[j % len(colors)])
+            brick = Brick(
+                i * (BRICK_WIDTH + 13) + 35, j * (BRICK_HEIGHT + 10) + 35, colors[j % len(colors)]
+            )
             bricks.add(brick)
     return bricks
+
 
 # Fonction principale du jeu
 def main():
@@ -181,6 +192,7 @@ def main():
             all_sprites.draw(screen)
             pygame.display.flip()
             clock.tick(60)
+
 
 if __name__ == "__main__":
     main()

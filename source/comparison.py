@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-
 from prediction import (
     _NUMERICAL_FEATURES,
     _is_log_transformed,
@@ -29,6 +28,7 @@ _TEXT = "#E0E0E0"
 # ---------------------------------------------------------------------------
 # Prediction helper (same pattern as what_if._predict_single)
 # ---------------------------------------------------------------------------
+
 
 def _predict_single(
     lgb_model,
@@ -94,6 +94,7 @@ def _predict_single(
 # ---------------------------------------------------------------------------
 # Input widget helpers
 # ---------------------------------------------------------------------------
+
 
 def _game_inputs(
     column_key: str,
@@ -168,6 +169,7 @@ def _game_inputs(
 # Charts
 # ---------------------------------------------------------------------------
 
+
 def _build_bar_chart(
     label_a: str,
     label_b: str,
@@ -177,26 +179,30 @@ def _build_bar_chart(
     """Create a horizontal bar chart comparing predicted sales for both games."""
     fig = go.Figure()
 
-    fig.add_trace(go.Bar(
-        y=[label_a],
-        x=[pred_a],
-        orientation="h",
-        name=label_a,
-        marker_color=_CYAN,
-        text=[f"{pred_a:.4f} M"],
-        textposition="auto",
-        textfont=dict(color=_BG, size=13),
-    ))
-    fig.add_trace(go.Bar(
-        y=[label_b],
-        x=[pred_b],
-        orientation="h",
-        name=label_b,
-        marker_color=_PINK,
-        text=[f"{pred_b:.4f} M"],
-        textposition="auto",
-        textfont=dict(color=_BG, size=13),
-    ))
+    fig.add_trace(
+        go.Bar(
+            y=[label_a],
+            x=[pred_a],
+            orientation="h",
+            name=label_a,
+            marker_color=_CYAN,
+            text=[f"{pred_a:.4f} M"],
+            textposition="auto",
+            textfont=dict(color=_BG, size=13),
+        )
+    )
+    fig.add_trace(
+        go.Bar(
+            y=[label_b],
+            x=[pred_b],
+            orientation="h",
+            name=label_b,
+            marker_color=_PINK,
+            text=[f"{pred_b:.4f} M"],
+            textposition="auto",
+            textfont=dict(color=_BG, size=13),
+        )
+    )
 
     fig.update_layout(
         title="Ventes predites (millions d'unites)",
@@ -255,22 +261,26 @@ def _build_radar_chart(
 
     fig = go.Figure()
 
-    fig.add_trace(go.Scatterpolar(
-        r=values_a_closed,
-        theta=categories_closed,
-        fill="toself",
-        name=label_a,
-        line_color=_CYAN,
-        fillcolor="rgba(0, 255, 204, 0.15)",
-    ))
-    fig.add_trace(go.Scatterpolar(
-        r=values_b_closed,
-        theta=categories_closed,
-        fill="toself",
-        name=label_b,
-        line_color=_PINK,
-        fillcolor="rgba(255, 110, 199, 0.15)",
-    ))
+    fig.add_trace(
+        go.Scatterpolar(
+            r=values_a_closed,
+            theta=categories_closed,
+            fill="toself",
+            name=label_a,
+            line_color=_CYAN,
+            fillcolor="rgba(0, 255, 204, 0.15)",
+        )
+    )
+    fig.add_trace(
+        go.Scatterpolar(
+            r=values_b_closed,
+            theta=categories_closed,
+            fill="toself",
+            name=label_b,
+            line_color=_PINK,
+            fillcolor="rgba(255, 110, 199, 0.15)",
+        )
+    )
 
     fig.update_layout(
         title="Comparaison des profils",
@@ -302,6 +312,7 @@ def _build_radar_chart(
 # ---------------------------------------------------------------------------
 # Summary card helper
 # ---------------------------------------------------------------------------
+
 
 def _render_summary_card(
     label: str,
@@ -348,6 +359,7 @@ def _render_summary_card(
 # ---------------------------------------------------------------------------
 # Main page function
 # ---------------------------------------------------------------------------
+
 
 def comparison_page() -> None:
     """Game comparison page: side-by-side prediction of two game configurations."""
@@ -412,16 +424,32 @@ def comparison_page() -> None:
     if compare_clicked:
         with st.spinner("Calcul des predictions..."):
             pred_a = _predict_single(
-                lgb_model, xgb_model, cb_model, scaler, encoder,
+                lgb_model,
+                xgb_model,
+                cb_model,
+                scaler,
+                encoder,
                 train_stats,
-                cfg_a["genre"], cfg_a["platform"], cfg_a["publisher"],
-                cfg_a["year"], cfg_a["meta_score"], cfg_a["user_review"],
+                cfg_a["genre"],
+                cfg_a["platform"],
+                cfg_a["publisher"],
+                cfg_a["year"],
+                cfg_a["meta_score"],
+                cfg_a["user_review"],
             )
             pred_b = _predict_single(
-                lgb_model, xgb_model, cb_model, scaler, encoder,
+                lgb_model,
+                xgb_model,
+                cb_model,
+                scaler,
+                encoder,
                 train_stats,
-                cfg_b["genre"], cfg_b["platform"], cfg_b["publisher"],
-                cfg_b["year"], cfg_b["meta_score"], cfg_b["user_review"],
+                cfg_b["genre"],
+                cfg_b["platform"],
+                cfg_b["publisher"],
+                cfg_b["year"],
+                cfg_b["meta_score"],
+                cfg_b["user_review"],
             )
 
         st.markdown("---")
@@ -483,22 +511,29 @@ def comparison_page() -> None:
 
         with chart_right:
             radar_fig = _build_radar_chart(
-                "Jeu A", "Jeu B", cfg_a, cfg_b, pred_a, pred_b,
+                "Jeu A",
+                "Jeu B",
+                cfg_a,
+                cfg_b,
+                pred_a,
+                pred_b,
             )
             st.plotly_chart(radar_fig, use_container_width=True)
 
         # --- Export comparison as CSV ---
         st.markdown("---")
-        export_df = pd.DataFrame({
-            "Configuration": ["Jeu A", "Jeu B"],
-            "Genre": [cfg_a["genre"], cfg_b["genre"]],
-            "Plateforme": [cfg_a["platform"], cfg_b["platform"]],
-            "Editeur": [cfg_a["publisher"], cfg_b["publisher"]],
-            "Annee": [cfg_a["year"], cfg_b["year"]],
-            "Metacritic": [cfg_a["meta_score"], cfg_b["meta_score"]],
-            "Score_utilisateur": [cfg_a["user_review"], cfg_b["user_review"]],
-            "Ventes_predites_M": [round(pred_a, 4), round(pred_b, 4)],
-        })
+        export_df = pd.DataFrame(
+            {
+                "Configuration": ["Jeu A", "Jeu B"],
+                "Genre": [cfg_a["genre"], cfg_b["genre"]],
+                "Plateforme": [cfg_a["platform"], cfg_b["platform"]],
+                "Editeur": [cfg_a["publisher"], cfg_b["publisher"]],
+                "Annee": [cfg_a["year"], cfg_b["year"]],
+                "Metacritic": [cfg_a["meta_score"], cfg_b["meta_score"]],
+                "Score_utilisateur": [cfg_a["user_review"], cfg_b["user_review"]],
+                "Ventes_predites_M": [round(pred_a, 4), round(pred_b, 4)],
+            }
+        )
         st.download_button(
             "Telecharger la comparaison (CSV)",
             export_df.to_csv(index=False),
@@ -508,8 +543,8 @@ def comparison_page() -> None:
 
     st.markdown("---")
     st.markdown(
-        f"<p style='text-align: center; color: #666;'>"
-        f"Les predictions sont basees sur un ensemble de 3 modeles "
-        f"(LightGBM + XGBoost + CatBoost). Les resultats sont indicatifs.</p>",
+        "<p style='text-align: center; color: #666;'>"
+        "Les predictions sont basees sur un ensemble de 3 modeles "
+        "(LightGBM + XGBoost + CatBoost). Les resultats sont indicatifs.</p>",
         unsafe_allow_html=True,
     )

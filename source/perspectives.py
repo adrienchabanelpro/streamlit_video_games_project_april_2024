@@ -1,14 +1,14 @@
-import streamlit as st
-import pandas as pd
-from PIL import Image
 import os
+
+import streamlit as st
+from PIL import Image
 
 
 def perspectives():
     # Titre de la page
     st.title("Perspectives")
 
-    images_dir = os.path.join(os.path.dirname(__file__), '..', 'images')
+    images_dir = os.path.join(os.path.dirname(__file__), "..", "images")
 
     # Chemin du GIF local
     gif_path = os.path.join(images_dir, "ryu-ken.gif")
@@ -27,11 +27,11 @@ def perspectives():
         "Enrichissement du Dataset : Pour obtenir une vision plus fiable et actualisée du marché des jeux vidéo, il serait bénéfique d'incorporer des données supplémentaires, notamment des ventes digitales. Les données actuelles sont principalement basées sur les ventes physiques, ce qui ne reflète pas entièrement les tendances actuelles du marché, dominé par les achats numériques. En intégrant ces informations, nous pourrions améliorer la représentativité et la précision de notre modèle.",
         "Intégration des Net Promoter Scores (NPS) : Nous avons récemment commencé à récupérer des informations sur les Net Promoter Scores (NPS) des jeux vidéo, qui mesurent la satisfaction et la fidélité des clients. L'ajout de cette métrique pourrait fournir des insights précieux sur la relation entre la satisfaction des utilisateurs et les ventes, permettant ainsi de modéliser de manière plus précise les facteurs influençant la performance des jeux.",
         "Analyse des tendances du marché : Une analyse plus approfondie des tendances actuelles du marché, telles que la popularité croissante des jeux mobiles et des plateformes de streaming, pourrait fournir des variables supplémentaires pertinentes pour nos modèles. Cela permettrait d'anticiper les évolutions du marché et de mieux prédire les ventes futures.",
-        "Collaboration avec des experts du domaine : Travailler en collaboration avec des experts de l'industrie des jeux vidéo pourrait nous aider à identifier des variables clés et des tendances émergentes. Leur expertise pourrait également orienter l'interprétation de nos résultats et suggérer des améliorations pratiques pour nos modèles."
+        "Collaboration avec des experts du domaine : Travailler en collaboration avec des experts de l'industrie des jeux vidéo pourrait nous aider à identifier des variables clés et des tendances émergentes. Leur expertise pourrait également orienter l'interprétation de nos résultats et suggérer des améliorations pratiques pour nos modèles.",
     ]
 
     for i, improvement in enumerate(improvements):
-        st.write(f"**{i+1}.** {improvement}")
+        st.write(f"**{i + 1}.** {improvement}")
 
     st.write("""
     En intégrant ces pistes d’amélioration, nous visons à renforcer la robustesse et la précision de notre modèle, offrant ainsi des insights plus pertinents et fiables pour l’analyse du marché des jeux vidéo.
@@ -45,12 +45,14 @@ def perspectives():
 
     # Ajout d'une zone interactive pour l'engagement
     st.subheader("Participez à l'amélioration du modèle")
-    st.write("Nous serions ravis de recevoir vos suggestions et idées pour améliorer notre modèle. Partagez vos commentaires ci-dessous :")
+    st.write(
+        "Nous serions ravis de recevoir vos suggestions et idées pour améliorer notre modèle. Partagez vos commentaires ci-dessous :"
+    )
 
     # Formulaire de commentaires
     with st.form("feedback_form"):
         name = st.text_input("Votre nom")
-        feedback = st.text_area("Vos suggestions")
+        st.text_area("Vos suggestions")
         submitted = st.form_submit_button("Envoyer")
 
         if submitted:
@@ -62,20 +64,26 @@ def perspectives():
 
     quiz_questions = {
         "Quelle est la plateforme de jeux vidéo la plus vendue de tous les temps ?": [
-            "PlayStation 2", "Nintendo Switch", "Xbox 360"
+            "PlayStation 2",
+            "Nintendo Switch",
+            "Xbox 360",
         ],
         "Quel jeu a généré le plus de revenus en 2020 ?": [
-            "Fortnite", "Call of Duty: Modern Warfare", "League of Legends"
+            "Fortnite",
+            "Call of Duty: Modern Warfare",
+            "League of Legends",
         ],
         "Quelle entreprise développe la série de jeux 'The Legend of Zelda' ?": [
-            "Nintendo", "Sony", "Microsoft"
-        ]
+            "Nintendo",
+            "Sony",
+            "Microsoft",
+        ],
     }
 
     quiz_answers = {
         "Quelle est la plateforme de jeux vidéo la plus vendue de tous les temps ?": "PlayStation 2",
         "Quel jeu a généré le plus de revenus en 2020 ?": "Call of Duty: Modern Warfare",
-        "Quelle entreprise développe la série de jeux 'The Legend of Zelda' ?": "Nintendo"
+        "Quelle entreprise développe la série de jeux 'The Legend of Zelda' ?": "Nintendo",
     }
 
     score = 0

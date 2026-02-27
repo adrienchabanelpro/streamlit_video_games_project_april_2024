@@ -25,7 +25,6 @@ Outputs saved to models/ and reports/:
 """
 
 import json
-import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -34,6 +33,7 @@ import category_encoders as ce
 import joblib
 import lightgbm as lgb
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -133,19 +133,13 @@ def compute_train_stats(df_train: pd.DataFrame) -> dict:
     stats["genre_means"] = df_train.groupby("Genre")[TARGET].mean().to_dict()
 
     # Mean Global_Sales by Platform
-    stats["platform_means"] = (
-        df_train.groupby("Platform")[TARGET].mean().to_dict()
-    )
+    stats["platform_means"] = df_train.groupby("Platform")[TARGET].mean().to_dict()
 
     # Cumulative sales by Genre and Year
     stats["cumsum_genre"] = {}
     for genre in df_train["Genre"].unique():
         genre_data = (
-            df_train[df_train["Genre"] == genre]
-            .groupby("Year")[TARGET]
-            .sum()
-            .sort_index()
-            .cumsum()
+            df_train[df_train["Genre"] == genre].groupby("Year")[TARGET].sum().sort_index().cumsum()
         )
         stats["cumsum_genre"][genre] = genre_data.to_dict()
 
@@ -187,37 +181,25 @@ def _lookup_cumulative(cumsum_dict: dict, category: str, year: int) -> float:
     return yearly[max(relevant_years)]
 
 
-def compute_engineered_features(
-    df: pd.DataFrame, train_stats: dict
-) -> pd.DataFrame:
+def compute_engineered_features(df: pd.DataFrame, train_stats: dict) -> pd.DataFrame:
     """Apply feature engineering using pre-computed training statistics."""
     df = df.copy()
 
     # Mean sales by genre / platform (from training data)
     df["Global_Sales_mean_genre"] = (
-        df["Genre"]
-        .map(train_stats["genre_means"])
-        .fillna(train_stats["global_sales_mean"])
+        df["Genre"].map(train_stats["genre_means"]).fillna(train_stats["global_sales_mean"])
     )
     df["Global_Sales_mean_platform"] = (
-        df["Platform"]
-        .map(train_stats["platform_means"])
-        .fillna(train_stats["global_sales_mean"])
+        df["Platform"].map(train_stats["platform_means"]).fillna(train_stats["global_sales_mean"])
     )
 
     # Interaction features
-    df["Year_Global_Sales_mean_genre"] = (
-        df["Year"] * df["Global_Sales_mean_genre"]
-    )
-    df["Year_Global_Sales_mean_platform"] = (
-        df["Year"] * df["Global_Sales_mean_platform"]
-    )
+    df["Year_Global_Sales_mean_genre"] = df["Year"] * df["Global_Sales_mean_genre"]
+    df["Year_Global_Sales_mean_platform"] = df["Year"] * df["Global_Sales_mean_platform"]
 
     # Cumulative sales
     df["Cumulative_Sales_Genre"] = df.apply(
-        lambda row: _lookup_cumulative(
-            train_stats["cumsum_genre"], row["Genre"], row["Year"]
-        ),
+        lambda row: _lookup_cumulative(train_stats["cumsum_genre"], row["Genre"], row["Year"]),
         axis=1,
     )
     df["Cumulative_Sales_Platform"] = df.apply(
@@ -238,20 +220,14 @@ def objective(trial: optuna.Trial, df: pd.DataFrame) -> float:
     split_year = trial.suggest_categorical("split_year", [2013, 2014, 2015])
 
     params = {
-        "learning_rate": trial.suggest_float(
-            "learning_rate", 0.01, 0.3, log=True
-        ),
+        "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
         "num_leaves": trial.suggest_int("num_leaves", 15, 127),
         "max_depth": trial.suggest_int("max_depth", 3, 12),
         "min_child_samples": trial.suggest_int("min_child_samples", 5, 100),
         "reg_alpha": trial.suggest_float("reg_alpha", 1e-8, 10.0, log=True),
-        "reg_lambda": trial.suggest_float(
-            "reg_lambda", 1e-8, 10.0, log=True
-        ),
+        "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 10.0, log=True),
         "subsample": trial.suggest_float("subsample", 0.5, 1.0),
-        "colsample_bytree": trial.suggest_float(
-            "colsample_bytree", 0.5, 1.0
-        ),
+        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
         "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
     }
 
@@ -305,24 +281,16 @@ def objective(trial: optuna.Trial, df: pd.DataFrame) -> float:
 # ---------------------------------------------------------------------------
 # Optuna objectives — XGBoost & CatBoost
 # ---------------------------------------------------------------------------
-def objective_xgb(
-    trial: optuna.Trial, X: np.ndarray, y: np.ndarray
-) -> float:
+def objective_xgb(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
     """Optuna objective for XGBoost with 5-fold CV."""
     params = {
-        "learning_rate": trial.suggest_float(
-            "learning_rate", 0.01, 0.3, log=True
-        ),
+        "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
         "max_depth": trial.suggest_int("max_depth", 3, 12),
         "min_child_weight": trial.suggest_int("min_child_weight", 1, 100),
         "reg_alpha": trial.suggest_float("reg_alpha", 1e-8, 10.0, log=True),
-        "reg_lambda": trial.suggest_float(
-            "reg_lambda", 1e-8, 10.0, log=True
-        ),
+        "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 10.0, log=True),
         "subsample": trial.suggest_float("subsample", 0.5, 1.0),
-        "colsample_bytree": trial.suggest_float(
-            "colsample_bytree", 0.5, 1.0
-        ),
+        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
         "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
     }
 
@@ -348,18 +316,12 @@ def objective_xgb(
     return float(np.mean(scores))
 
 
-def objective_cb(
-    trial: optuna.Trial, X: np.ndarray, y: np.ndarray
-) -> float:
+def objective_cb(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
     """Optuna objective for CatBoost with 5-fold CV."""
     params = {
-        "learning_rate": trial.suggest_float(
-            "learning_rate", 0.01, 0.3, log=True
-        ),
+        "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
         "depth": trial.suggest_int("depth", 3, 10),
-        "l2_leaf_reg": trial.suggest_float(
-            "l2_leaf_reg", 1e-8, 10.0, log=True
-        ),
+        "l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 1e-8, 10.0, log=True),
         "subsample": trial.suggest_float("subsample", 0.5, 1.0),
         "iterations": trial.suggest_int("iterations", 100, 1000),
     }
@@ -368,9 +330,7 @@ def objective_cb(
     scores: list[float] = []
 
     for train_idx, val_idx in kf.split(X):
-        model = cb.CatBoostRegressor(
-            **params, random_seed=RANDOM_STATE, verbose=0
-        )
+        model = cb.CatBoostRegressor(**params, random_seed=RANDOM_STATE, verbose=0)
         model.fit(
             X[train_idx],
             y[train_idx],
@@ -425,9 +385,7 @@ def train_final_cb(
     best_params: dict,
 ) -> cb.CatBoostRegressor:
     """Train the final CatBoost model with best hyperparameters."""
-    model = cb.CatBoostRegressor(
-        **best_params, random_seed=RANDOM_STATE, verbose=0
-    )
+    model = cb.CatBoostRegressor(**best_params, random_seed=RANDOM_STATE, verbose=0)
     model.fit(X_train, y_train)
     return model
 
@@ -466,12 +424,8 @@ def evaluate_model(
     y_baseline = np.full_like(y_test, global_mean)
     metrics["baseline_r2"] = float(r2_score(y_test, y_baseline))
     metrics["baseline_mse"] = float(mean_squared_error(y_test, y_baseline))
-    metrics["baseline_rmse"] = float(
-        np.sqrt(mean_squared_error(y_test, y_baseline))
-    )
-    metrics["baseline_mae"] = float(
-        mean_absolute_error(y_test, y_baseline)
-    )
+    metrics["baseline_rmse"] = float(np.sqrt(mean_squared_error(y_test, y_baseline)))
+    metrics["baseline_mae"] = float(mean_absolute_error(y_test, y_baseline))
 
     return metrics
 
@@ -492,9 +446,7 @@ def evaluate_ensemble(
 
     y_baseline = np.full_like(y_test, global_mean)
     metrics["baseline_r2"] = float(r2_score(y_test, y_baseline))
-    metrics["baseline_rmse"] = float(
-        np.sqrt(mean_squared_error(y_test, y_baseline))
-    )
+    metrics["baseline_rmse"] = float(np.sqrt(mean_squared_error(y_test, y_baseline)))
 
     return metrics
 
@@ -646,9 +598,7 @@ def main() -> None:
     df_train["Publisher_encoded"] = encoder.fit_transform(
         df_train[["Publisher"]], df_train[TARGET]
     )["Publisher"]
-    df_test["Publisher_encoded"] = encoder.transform(
-        df_test[["Publisher"]]
-    )["Publisher"]
+    df_test["Publisher_encoded"] = encoder.transform(df_test[["Publisher"]])["Publisher"]
 
     print("  Fitting StandardScaler...")
     scaler = StandardScaler()
@@ -708,16 +658,16 @@ def main() -> None:
     metrics_lgb = evaluate_model(lgb_model, X_test, y_test, gm)
     metrics_xgb = evaluate_model(xgb_model, X_test, y_test, gm)
     metrics_cb = evaluate_model(cb_model, X_test, y_test, gm)
-    metrics_ens = evaluate_ensemble(
-        [lgb_model, xgb_model, cb_model], X_test, y_test, gm
-    )
+    metrics_ens = evaluate_ensemble([lgb_model, xgb_model, cb_model], X_test, y_test, gm)
 
     _print_metrics("LightGBM", metrics_lgb)
     _print_metrics("XGBoost", metrics_xgb)
     _print_metrics("CatBoost", metrics_cb)
     _print_metrics("Ensemble", metrics_ens)
-    print(f"  {'Baseline':12s}  R2={metrics_lgb['baseline_r2']:.4f}  "
-          f"RMSE={metrics_lgb['baseline_rmse']:.4f}")
+    print(
+        f"  {'Baseline':12s}  R2={metrics_lgb['baseline_r2']:.4f}  "
+        f"RMSE={metrics_lgb['baseline_rmse']:.4f}"
+    )
 
     # ---- 9. SHAP (using LightGBM) ----
     print("\n[9/9] Generating SHAP plots (LightGBM)...")
@@ -737,8 +687,14 @@ def main() -> None:
         "ensemble": metrics_ens,
     }
     save_artifacts(
-        lgb_model, xgb_model, cb_model,
-        scaler, encoder, train_stats, all_params, all_metrics,
+        lgb_model,
+        xgb_model,
+        cb_model,
+        scaler,
+        encoder,
+        train_stats,
+        all_params,
+        all_metrics,
     )
 
     print("\n" + "=" * 60)

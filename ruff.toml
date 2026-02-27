@@ -1,0 +1,19 @@
+line-length = 100
+target-version = "py311"
+
+[lint]
+select = ["E", "F", "W", "I"]
+ignore = [
+    "E501",  # line too long — handled by formatter
+    "W291",  # trailing whitespace — many are in markdown strings for line breaks
+    "W292",  # no newline at end of file — auto-fixed by formatter
+    "W293",  # blank line contains whitespace — often in markdown strings
+]
+
+[lint.per-file-ignores]
+"tests/*" = ["F811"]  # allow fixture redefinition
+"source/casse_brique.py" = ["F821"]  # pre-existing: show_you_win called before definition
+"source/snake.py" = ["F821"]
+
+[format]
+quote-style = "double"

@@ -148,13 +148,13 @@ This document outlines an ambitious roadmap to take this video game sales predic
   ├── utils/         # Shared utilities
   └── config.py      # Central configuration
   ```
-- [ ] **Pre-commit hooks** — Set up `ruff` (linter + formatter), `mypy` (type checking), and `pytest` as pre-commit hooks.
+- [x] **Pre-commit hooks** — Ruff linter + formatter on commit, pytest on push. Config in `.pre-commit-config.yaml` and `ruff.toml`.
 - [ ] **Docstrings** — Add Google-style docstrings to all public functions and classes.
 
 ### Ambitious
 - [x] **CI/CD pipeline** — GitHub Actions workflow (`.github/workflows/ci.yml`) runs pytest on every push and PR to main. Uses Python 3.12 with pip caching.
 - [ ] **ML pipeline with MLflow** — Track experiments, log metrics, version models, and compare runs.
-- [ ] **Makefile / Task runner** — Centralize common commands (run, test, lint, train, deploy).
+- [x] **Makefile / Task runner** — `make run`, `make test`, `make lint`, `make format`, `make train`, `make clean`, `make install`.
 
 ---
 
@@ -165,7 +165,7 @@ This document outlines an ambitious roadmap to take this video game sales predic
 - [ ] **Secrets management** — Use `st.secrets` for any API keys instead of hardcoding.
 
 ### Medium Effort
-- [ ] **Docker** — Create a proper Dockerfile (not just dev container) for reproducible production deployment.
+- [x] **Docker** — `Dockerfile` (Python 3.12-slim, libgomp1) + `.dockerignore`. Run with `docker build -t vgsales . && docker run -p 8501:8501 vgsales`.
 - [ ] **Railway / Render** — Deploy on a managed platform with custom domain support.
 - [ ] **Performance monitoring** — Add basic analytics (page views, prediction counts) with a lightweight solution.
 

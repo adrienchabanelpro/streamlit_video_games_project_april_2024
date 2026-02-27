@@ -1,16 +1,12 @@
-import streamlit as st
 import os
-import requests
-from PIL import Image
 from io import BytesIO
+
 import altair as alt
 import pandas as pd
-import lightgbm as lgb
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from sklearn.datasets import fetch_california_housing
-from sklearn.metrics import mean_squared_error
+import requests
+import streamlit as st
+from PIL import Image
+
 
 # Fonction pour afficher la page méthodologie
 def methodologie():
@@ -24,15 +20,15 @@ def methodologie():
     st.title("🕹️ Méthodologie du Projet 🎮")
 
     # Chemin de l'image locale
-    image_path = os.path.join(os.path.dirname(__file__), '..', 'images', 'collab.png')
-
+    image_path = os.path.join(os.path.dirname(__file__), "..", "images", "collab.png")
 
     # Afficher l'image sous le titre
     if os.path.exists(image_path):
-      st.image(image_path, use_container_width=True)
+        st.image(image_path, use_container_width=True)
     else:
-      st.write(f"Erreur : l'image {os.path.basename(image_path)} est introuvable. Vérifiez le dossier images/.")
-
+        st.write(
+            f"Erreur : l'image {os.path.basename(image_path)} est introuvable. Vérifiez le dossier images/."
+        )
 
     # Présentation de la méthodologie
     st.header("Méthodologie")
@@ -80,24 +76,25 @@ def methodologie():
     st.subheader("Répartition du temps de travail")
 
     # Exemple de données fictives pour le graphique
-    data = pd.DataFrame({
-        'Activité': ['Réunions Discord', 'Travail sur Google Colab', 'Autres'],
-        'Heures par semaine': [14, 25, 2]
-    })
+    data = pd.DataFrame(
+        {
+            "Activité": ["Réunions Discord", "Travail sur Google Colab", "Autres"],
+            "Heures par semaine": [14, 25, 2],
+        }
+    )
 
-    chart = alt.Chart(data).mark_bar().encode(
-        x=alt.X('Activité', sort=None),
-        y='Heures par semaine',
-        color=alt.Color('Activité', legend=None),
-        tooltip=['Activité', 'Heures par semaine']
-    ).properties(
-        width=600,
-        height=400
-    ).configure_axis(
-        labelFontSize=12,
-        titleFontSize=14
-    ).configure_title(
-        fontSize=16
+    chart = (
+        alt.Chart(data)
+        .mark_bar()
+        .encode(
+            x=alt.X("Activité", sort=None),
+            y="Heures par semaine",
+            color=alt.Color("Activité", legend=None),
+            tooltip=["Activité", "Heures par semaine"],
+        )
+        .properties(width=600, height=400)
+        .configure_axis(labelFontSize=12, titleFontSize=14)
+        .configure_title(fontSize=16)
     )
 
     st.altair_chart(chart, use_container_width=True)
