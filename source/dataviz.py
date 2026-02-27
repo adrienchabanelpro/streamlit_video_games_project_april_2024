@@ -1,12 +1,20 @@
+"""DataViz page: interactive charts with global search & filter controls."""
+
 import os
-import streamlit as st
+
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+import streamlit as st
 
 _BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
+
+_PLOTLY_LAYOUT = dict(
+    template="plotly_dark",
+    paper_bgcolor="#0D0D0D",
+    plot_bgcolor="#1A1A2E",
+    font=dict(color="#E0E0E0"),
+)
 
 
 @st.cache_data
@@ -24,220 +32,268 @@ def dataviz():
     with st.spinner("Chargement des visualisations..."):
         df = load_dataviz_data()
 
-    st.title("📊 Page de DataViz 🎮")
+    st.title("Page de DataViz")
 
-    # Section: Évolution des ventes globales par année
-    st.header("Évolution des ventes globales par année")
-    sales_by_year = df.groupby('Year')['Global_Sales'].sum()
+    # ------------------------------------------------------------------
+    # Global filters
+    # ------------------------------------------------------------------
+    st.subheader("Filtres")
+    with st.expander("Filtrer les donnees", expanded=True):
+        col_f1, col_f2 = st.columns(2)
+        with col_f1:
+            all_genres = sorted(df["Genre"].unique())
+            sel_genres = st.multiselect(
+                "Genres", all_genres, default=all_genres, key="dv_genre"
+            )
+            all_platforms = sorted(df["Platform"].unique())
+            sel_platforms = st.multiselect(
+                "Plateformes", all_platforms, default=all_platforms, key="dv_platform"
+            )
+        with col_f2:
+            all_publishers = sorted(df["Publisher"].unique())
+            sel_publishers = st.multiselect(
+                "Editeurs", all_publishers, default=all_publishers, key="dv_publisher"
+            )
+            year_min, year_max = int(df["Year"].min()), int(df["Year"].max())
+            sel_years = st.slider(
+                "Periode", year_min, year_max, (year_min, year_max), key="dv_year"
+            )
+
+    # Apply filters
+    mask = (
+        df["Genre"].isin(sel_genres)
+        & df["Platform"].isin(sel_platforms)
+        & df["Publisher"].isin(sel_publishers)
+        & df["Year"].between(sel_years[0], sel_years[1])
+    )
+    df_f = df[mask]
+
+    if df_f.empty:
+        st.warning("Aucun jeu ne correspond aux filtres selectionnes.")
+        return
+
+    st.caption(f"{len(df_f):,} jeux selectionnes sur {len(df):,}")
+
+    st.markdown("---")
+
+    # ------------------------------------------------------------------
+    # 1. Global sales over time
+    # ------------------------------------------------------------------
+    st.header("Evolution des ventes globales par annee")
+    sales_by_year = df_f.groupby('Year')['Global_Sales'].sum()
     mean_sales = sales_by_year.mean()
     median_sales = sales_by_year.median()
-    fig2 = go.Figure()
-    fig2.add_trace(go.Scatter(x=sales_by_year.index, y=sales_by_year, mode='lines+markers',
-                            name='Ventes annuelles', line=dict(color='blue')))
-    fig2.add_hline(y=mean_sales, line=dict(color='red', dash='solid'),
-                annotation_text=f"Moyenne des ventes: {mean_sales:.2f} millions", annotation_position="bottom right")
-    fig2.add_hline(y=median_sales, line=dict(color='yellow', dash='dash'),
-                annotation_text=f"Médiane des ventes: {median_sales:.2f} millions", annotation_position="bottom right")
-    fig2.update_layout(title='Évolution des ventes globales par année',
-                    xaxis_title='Année',
-                    yaxis_title='Ventes globales (en millions)',
-                    legend_title='Légende',
-                    width=1400,
-                    height=800)
-    st.plotly_chart(fig2)
 
-
-        # Section: Évolution des ventes par région
-    st.header("Évolution des ventes par région")
-    df_sales_year = df.groupby(["Year"]).agg({'EU_Sales': 'sum',
-                                            'NA_Sales': 'sum',
-                                            'JP_Sales': 'sum',
-                                            'Other_Sales': 'sum'})
-    fig6 = px.bar(df_sales_year, x=df_sales_year.index, y=["NA_Sales", "EU_Sales", "JP_Sales", "Other_Sales"],
-                title="Evolution des ventes par région")
-    fig6.update_layout(
-    xaxis_title="Années", yaxis_title="Ventes par régions(en millions)"
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=sales_by_year.index, y=sales_by_year, mode='lines+markers',
+        name='Ventes annuelles', line=dict(color='#00FFCC'),
+    ))
+    fig.add_hline(
+        y=mean_sales, line=dict(color='#FF6EC7', dash='solid'),
+        annotation_text=f"Moyenne: {mean_sales:.2f} M",
+        annotation_position="bottom right",
     )
-    st.plotly_chart(fig6)
+    fig.add_hline(
+        y=median_sales, line=dict(color='#FFFF00', dash='dash'),
+        annotation_text=f"Mediane: {median_sales:.2f} M",
+        annotation_position="bottom right",
+    )
+    fig.update_layout(
+        title='Evolution des ventes globales par annee',
+        xaxis_title='Annee', yaxis_title='Ventes globales (millions)',
+        legend_title='Legende',
+        **_PLOTLY_LAYOUT,
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
+    # ------------------------------------------------------------------
+    # 2. Regional sales over time
+    # ------------------------------------------------------------------
+    st.header("Evolution des ventes par region")
+    df_sales_year = df_f.groupby("Year").agg({
+        'NA_Sales': 'sum', 'EU_Sales': 'sum',
+        'JP_Sales': 'sum', 'Other_Sales': 'sum',
+    })
+    fig = px.bar(
+        df_sales_year, x=df_sales_year.index,
+        y=["NA_Sales", "EU_Sales", "JP_Sales", "Other_Sales"],
+        title="Evolution des ventes par region",
+        color_discrete_sequence=["#00FFCC", "#FF6EC7", "#FFFF00", "#7B68EE"],
+    )
+    fig.update_layout(
+        xaxis_title="Annee", yaxis_title="Ventes (millions)",
+        **_PLOTLY_LAYOUT,
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
-    region_sales = df[['NA_Sales', 'EU_Sales', 'JP_Sales', 'Other_Sales']].sum().reset_index()
+    # Total by region
+    region_sales = df_f[['NA_Sales', 'EU_Sales', 'JP_Sales', 'Other_Sales']].sum().reset_index()
     region_sales.columns = ['Region', 'Total_Sales']
-    fig3 = px.bar(region_sales, x='Region', y='Total_Sales',
-                title='Ventes totales par Régions',
-                labels={'Total_Sales': 'Ventes totales (en millions)', 'Region': 'Région'},
-                color='Total_Sales')
-    fig3.update_layout(xaxis_title='Régions',
-                    yaxis_title='Ventes totales (en millions)',
-                    xaxis_tickangle=-45)
-    st.plotly_chart(fig3)
+    fig = px.bar(
+        region_sales, x='Region', y='Total_Sales',
+        title='Ventes totales par region',
+        labels={'Total_Sales': 'Ventes totales (millions)', 'Region': 'Region'},
+        color='Region',
+        color_discrete_sequence=["#00FFCC", "#FF6EC7", "#FFFF00", "#7B68EE"],
+    )
+    fig.update_layout(
+        xaxis_title='Region', yaxis_title='Ventes totales (millions)',
+        **_PLOTLY_LAYOUT,
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
+    # ------------------------------------------------------------------
+    # 3. Regional vs global scatter (Plotly, replacing Matplotlib/seaborn)
+    # ------------------------------------------------------------------
+    st.header("Relation entre les ventes regionales et les ventes globales")
+    region_cols = [
+        ("NA_Sales", "Ventes NA"),
+        ("EU_Sales", "Ventes EU"),
+        ("JP_Sales", "Ventes JP"),
+        ("Other_Sales", "Autres ventes"),
+    ]
+    for region_col, region_label in region_cols:
+        fig = px.scatter(
+            df_f, x=region_col, y='Global_Sales', color='Genre',
+            title=f'{region_label} vs Ventes Globales',
+            labels={
+                region_col: f'{region_label} (millions)',
+                'Global_Sales': 'Ventes Globales (millions)',
+            },
+            opacity=0.6,
+        )
+        fig.update_layout(**_PLOTLY_LAYOUT)
+        st.plotly_chart(fig, use_container_width=True)
 
-    # Section: Relation entre les ventes régionales et les ventes globales
-    st.header("Relation entre les ventes régionales et les ventes globales")
-    fig, axes = plt.subplots(2, 2, figsize=(18, 12))
-    fig.suptitle('Relation entre les ventes régionales et les ventes globales')
-
-
-    # Ventes en Amérique du Nord vs Ventes Globales
-    sns.scatterplot(ax=axes[0, 0], data=df, x='NA_Sales', y='Global_Sales', hue='Genre', style='Genre', s=100)
-    axes[0, 0].set_title('Ventes NA vs Ventes Globales')
-    axes[0, 0].set_xlabel('Ventes NA (en millions)')
-    axes[0, 0].set_ylabel('Ventes Globales (en millions)')
-
-
-    # Ventes en Europe vs Ventes Globales
-    sns.scatterplot(ax=axes[0, 1], data=df, x='EU_Sales', y='Global_Sales', hue='Genre', style='Genre', s=100)
-    axes[0, 1].set_title('Ventes EU vs Ventes Globales')
-    axes[0, 1].set_xlabel('Ventes EU (en millions)')
-    axes[0, 1].set_ylabel('Ventes Globales (en millions)')
-
-
-    # Ventes au Japon vs Ventes Globales
-    sns.scatterplot(ax=axes[1, 0], data=df, x='JP_Sales', y='Global_Sales', hue='Genre', style='Genre', s=100)
-    axes[1, 0].set_title('Ventes JP vs Ventes Globales')
-    axes[1, 0].set_xlabel('Ventes JP (en millions)')
-    axes[1, 0].set_ylabel('Ventes Globales (en millions)')
-
-
-    # Autres ventes vs Ventes Globales
-    sns.scatterplot(ax=axes[1, 1], data=df, x='Other_Sales', y='Global_Sales', hue='Genre', style='Genre', s=100)
-    axes[1, 1].set_title('Autres Ventes vs Ventes Globales')
-    axes[1, 1].set_xlabel('Autres Ventes (en millions)')
-    axes[1, 1].set_ylabel('Ventes Globales (en millions)')
-
-
-    st.pyplot(fig)
-
-
-    # Section: Ventes par région pour les 10 principaux éditeurs
-    st.header("Ventes par région pour les 10 principaux éditeurs")
-    ventes_par_editeur = df.groupby('Publisher').agg({
-    'Global_Sales': 'sum',
-    'NA_Sales': 'sum',
-    'EU_Sales': 'sum',
-    'JP_Sales': 'sum',
-    'Other_Sales': 'sum'
+    # ------------------------------------------------------------------
+    # 4. Top 10 publishers by region
+    # ------------------------------------------------------------------
+    st.header("Ventes par region pour les 10 principaux editeurs")
+    ventes_par_editeur = df_f.groupby('Publisher').agg({
+        'Global_Sales': 'sum', 'NA_Sales': 'sum',
+        'EU_Sales': 'sum', 'JP_Sales': 'sum', 'Other_Sales': 'sum',
     }).reset_index()
     top_editeurs = ventes_par_editeur.sort_values(by='Global_Sales', ascending=False).head(10)
-    ventes_top_editeurs = top_editeurs.melt(id_vars='Publisher',
-                                        value_vars=['NA_Sales', 'EU_Sales', 'JP_Sales', 'Other_Sales'],
-                                        var_name='Region', value_name='Sales')
-    fig5 = px.bar(ventes_top_editeurs,
-                x='Publisher',
-                y='Sales',
-                color='Region',
-                title='Ventes par région pour les 10 principaux éditeurs',
-                labels={'Sales': 'Ventes (en millions)', 'Publisher': 'Éditeur'},
-                text_auto=True)
-    st.plotly_chart(fig5)
+    ventes_top = top_editeurs.melt(
+        id_vars='Publisher',
+        value_vars=['NA_Sales', 'EU_Sales', 'JP_Sales', 'Other_Sales'],
+        var_name='Region', value_name='Sales',
+    )
+    fig = px.bar(
+        ventes_top, x='Publisher', y='Sales', color='Region',
+        title='Ventes par region pour les 10 principaux editeurs',
+        labels={'Sales': 'Ventes (millions)', 'Publisher': 'Editeur'},
+        text_auto=True,
+        color_discrete_sequence=["#00FFCC", "#FF6EC7", "#FFFF00", "#7B68EE"],
+    )
+    fig.update_layout(**_PLOTLY_LAYOUT)
+    st.plotly_chart(fig, use_container_width=True)
 
-
-            # Section: Distribution des ventes globales par genre de jeu
+    # ------------------------------------------------------------------
+    # 5. Sales distribution by genre
+    # ------------------------------------------------------------------
     st.header("Distribution des ventes globales par genre de jeu")
-    fig1 = px.box(df, x='Genre', y='Global_Sales', color='Genre',
-                title='Distribution des ventes globales par genre de jeu',
-                labels={'Global_Sales': 'Ventes globales (en millions)', 'Genre': 'Genre'},
-                notched=True,
-                points='all')
-    fig1.update_layout(
-    xaxis_title='Genre',
-    yaxis_title='Ventes globales (en millions)',
-    xaxis_tickangle=45,
-    yaxis=dict(
-        type='log',
-        autorange=True
+    fig = px.box(
+        df_f, x='Genre', y='Global_Sales', color='Genre',
+        title='Distribution des ventes globales par genre de jeu',
+        labels={'Global_Sales': 'Ventes globales (millions)', 'Genre': 'Genre'},
+        notched=True, points='all',
     )
-    )
-    st.plotly_chart(fig1)
-
-
-    # Filtrer les données pour les top 5 genres
-    top_5_genre = ["Sports", "Action", "Role-Playing", "Shooter", "Platform"]
-    df_top_5_genre = df[df["Genre"].isin(top_5_genre)]
-
-
-    # Créer un tableau croisé dynamique pour obtenir les ventes globales par année et par genre
-    df_top_5_genre = df_top_5_genre.pivot_table(values='Global_Sales', index='Year', columns='Genre', aggfunc='sum').fillna(0)
-    df_top_5_genre["Global_Sales"] = df_top_5_genre.sum(axis = 1)
-
-    # Créer le graphique à barres empilées
-    fig = px.bar(df_top_5_genre.drop('Global_Sales', axis = 1), x=df_top_5_genre.index, y=df_top_5_genre.drop('Global_Sales', axis = 1).columns, title="Évolution des ventes en fonction des genres")
-
-    # Mettre à jour les labels des axes
     fig.update_layout(
-        xaxis_title='Années',
-        yaxis_title='Ventes globales (en millions)'
+        xaxis_tickangle=45,
+        yaxis=dict(type='log', autorange=True),
+        **_PLOTLY_LAYOUT,
     )
-    st.plotly_chart(fig)
+    st.plotly_chart(fig, use_container_width=True)
 
+    # ------------------------------------------------------------------
+    # 6. Top 5 genres over time
+    # ------------------------------------------------------------------
+    st.header("Evolution des ventes par genre (top 5)")
+    top_5_genre = (
+        df_f.groupby("Genre")["Global_Sales"].sum()
+        .nlargest(5).index.tolist()
+    )
+    if top_5_genre:
+        df_top5 = df_f[df_f["Genre"].isin(top_5_genre)]
+        pivot = df_top5.pivot_table(
+            values='Global_Sales', index='Year', columns='Genre', aggfunc='sum',
+        ).fillna(0)
+        fig = px.bar(
+            pivot, x=pivot.index, y=pivot.columns,
+            title="Evolution des ventes en fonction des genres (top 5)",
+        )
+        fig.update_layout(
+            xaxis_title='Annee', yaxis_title='Ventes globales (millions)',
+            **_PLOTLY_LAYOUT,
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
-    # Section: Corrélation entre les ventes globales et les ventes de jeux de différents genres
-    st.header("Corrélation entre les ventes globales et les ventes de jeux de différents genres")
-    
-    # Créer les scatter plots
-    fig1 = px.scatter(df_top_5_genre, x="Action", y="Global_Sales", trendline="ols", trendline_scope="trace", trendline_color_override="red", title="Corrélation entre les ventes globales et les ventes de jeux de type Action")
-    fig2 = px.scatter(df_top_5_genre, x="Shooter", y="Global_Sales", trendline="ols", trendline_scope="trace", trendline_color_override="red", title="Corrélation entre les ventes globales et les ventes de jeux de type Shooter")
-    fig3 = px.scatter(df_top_5_genre, x="Role-Playing", y="Global_Sales", trendline="ols", trendline_scope="trace", trendline_color_override="red", title="Corrélation entre les ventes globales et les ventes de jeux de type Role-Playing")
-    fig4 = px.scatter(df_top_5_genre, x="Sports", y="Global_Sales", trendline="ols", trendline_scope="trace", trendline_color_override="red", title="Corrélation entre les ventes globales et les ventes de jeux de type Sports")
-    fig5 = px.scatter(df_top_5_genre, x="Platform", y="Global_Sales", trendline="ols", trendline_scope="trace", trendline_color_override="red", title="Corrélation entre les ventes globales et les ventes de jeux de type Platform")
+    # ------------------------------------------------------------------
+    # 7. Meta Score vs User Review
+    # ------------------------------------------------------------------
+    st.header("Correlation entre Meta Score et User Review")
+    fig = px.scatter(
+        df_f, x='meta_score', y='user_review',
+        title='Relation entre Meta Score et User Review',
+        labels={'meta_score': 'Meta Score', 'user_review': 'User Review'},
+        trendline='ols', color='Genre', opacity=0.5,
+    )
+    fig.update_layout(**_PLOTLY_LAYOUT)
+    st.plotly_chart(fig, use_container_width=True)
 
+    # ------------------------------------------------------------------
+    # 8. Sales by Meta Score / User Review
+    # ------------------------------------------------------------------
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.header("Ventes vs Meta Score")
+        fig = px.histogram(
+            df_f, x='meta_score', y='Global_Sales',
+            title='Ventes globales vs Meta Score',
+            labels={'meta_score': 'Meta Score', 'Global_Sales': 'Ventes (millions)'},
+            log_y=True, color_discrete_sequence=["#00FFCC"],
+        )
+        fig.update_layout(**_PLOTLY_LAYOUT)
+        st.plotly_chart(fig, use_container_width=True)
 
-    # Afficher les scatter plots dans Streamlit un par un
-    st.plotly_chart(fig1)
-    st.plotly_chart(fig2)
-    st.plotly_chart(fig3)
-    st.plotly_chart(fig4)
-    st.plotly_chart(fig5)
+    with col_b:
+        st.header("Ventes vs User Review")
+        fig = px.histogram(
+            df_f, x='user_review', y='Global_Sales',
+            title='Ventes globales vs User Review',
+            labels={'user_review': 'User Review', 'Global_Sales': 'Ventes (millions)'},
+            log_y=True, color_discrete_sequence=["#FF6EC7"],
+        )
+        fig.update_layout(**_PLOTLY_LAYOUT)
+        st.plotly_chart(fig, use_container_width=True)
 
+    # ------------------------------------------------------------------
+    # 9. Median scores by genre
+    # ------------------------------------------------------------------
+    st.header("Moyenne des avis par genre")
+    df_score = df_f.groupby("Genre").agg({
+        'user_review': 'mean', 'meta_score': 'mean',
+    }).reset_index()
 
-    # Section: Corrélation entre meta_score et user_review
-    st.header("Corrélation entre Meta Score et User Review")
-    scatter_meta_user = px.scatter(df, x='meta_score', y='user_review',
-                                title='Relation entre Meta Score et User Review',
-                                labels={'meta_score': 'Meta Score', 'user_review': 'User Review'},
-                                trendline='ols')
-    st.plotly_chart(scatter_meta_user)
+    col_c, col_d = st.columns(2)
+    with col_c:
+        df_sorted = df_score.sort_values("user_review")
+        fig = px.bar(
+            df_sorted, x='Genre', y='user_review', color='Genre',
+            title='Moyenne des avis joueurs par genre',
+            labels={'user_review': 'Avis joueurs'},
+        )
+        fig.update_layout(yaxis_title="Avis joueurs", **_PLOTLY_LAYOUT)
+        st.plotly_chart(fig, use_container_width=True)
 
-
-    # Hist des ventes globales en fonction du score Meta
-    st.header("Ventes globales en fonction du score Meta")
-    hist_meta_sales = px.histogram(df, x='meta_score', y='Global_Sales',
-                                title='Ventes globales en fonction du score Meta',
-                                labels={'meta_score': 'Meta Score', 'Global_Sales': 'Ventes globales (en millions)'},
-                                log_y=True)
-    st.plotly_chart(hist_meta_sales)
-
-
-    # Hist des ventes globales en fonction des notes utilisateurs
-    st.header("Ventes globales en fonction des notes utilisateurs")
-    hist_user_sales = px.histogram(df, x='user_review', y='Global_Sales', color_discrete_sequence=['red'],
-                                title='Ventes globales en fonction des notes utilisateurs',
-                                labels={'user_review': 'User Review', 'Global_Sales': 'Ventes globales (en millions)'},
-                                log_y=True)
-    st.plotly_chart(hist_user_sales)
-
-
-    # Section: Médianes des avis des joueurs et de la presse en fonction des genres de jeu
-    st.header("Médiane des avis des joueurs et de la presse en fonction des genres de jeu")
-    df_score = df.groupby(["Genre"]).agg({'user_review': 'mean', 'meta_score': 'mean'})
-    df_score = df_score.sort_values("user_review")
-
-
-    # Histogramme des avis des joueurs par genre
-    hist_user_genre = px.histogram(df_score, x=df_score.index, y='user_review', color=df_score.index,
-                                title='Médiane des avis des joueurs en fonction des genres de jeu',
-                                labels={'user_review': 'Avis des joueurs'})
-    hist_user_genre.update_layout(yaxis_title="Avis des joueurs")
-    hist_user_genre.update_yaxes(range=[7.1, 8])
-    st.plotly_chart(hist_user_genre)
-
-
-    # Histogramme des avis de la presse par genre
-    df_score = df_score.sort_values("meta_score")
-    hist_meta_genre = px.histogram(df_score, x=df_score.index, y='meta_score', color=df_score.index,
-                                title='Médiane des avis de presse en fonction des genres de jeu',
-                                labels={'meta_score': 'Avis de la presse'})
-    hist_meta_genre.update_layout(yaxis_title="Avis de la presse")
-    hist_meta_genre.update_yaxes(range=[68, 80])
-    st.plotly_chart(hist_meta_genre)
+    with col_d:
+        df_sorted = df_score.sort_values("meta_score")
+        fig = px.bar(
+            df_sorted, x='Genre', y='meta_score', color='Genre',
+            title='Moyenne des avis presse par genre',
+            labels={'meta_score': 'Avis presse'},
+        )
+        fig.update_layout(yaxis_title="Avis presse", **_PLOTLY_LAYOUT)
+        st.plotly_chart(fig, use_container_width=True)
