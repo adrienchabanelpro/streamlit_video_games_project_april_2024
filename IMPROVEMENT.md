@@ -70,7 +70,7 @@ This document outlines an ambitious roadmap to take this video game sales predic
 
 ### Medium Effort
 - [ ] **Recommendation engine** — "Games like this" feature: given a game's attributes, find similar games using cosine similarity or k-NN on feature vectors.
-- [ ] **What-if analysis** — Interactive sliders to see how changing one variable (e.g., meta_score from 60 to 90) impacts predicted sales, with real-time chart updates.
+- [x] **What-if analysis** — Interactive sliders to see how changing one variable (e.g., meta_score from 60 to 90) impacts predicted sales, with real-time chart updates.
 - [ ] **Batch prediction** — Upload a CSV of multiple games and get predictions for all of them at once.
 - [ ] **Historical trend explorer** — Interactive timeline showing how genres, platforms, and publishers evolved over decades.
 - [ ] **Publisher analytics dashboard** — Deep-dive into any publisher's historical performance, genre distribution, and predicted future.
@@ -215,7 +215,7 @@ This document outlines an ambitious roadmap to take this video game sales predic
 | 10 | Data | Steam/IGDB API integration | High | Medium |
 | ~~11~~ | Code | ~~Unit tests (pytest)~~ | Medium | Medium | **DONE** |
 | ~~12~~ | Deploy | ~~Streamlit Cloud deployment~~ | High | Low | **DONE** |
-| 13 | Feature | What-if analysis tool | Medium | Medium |
+| ~~13~~ | Feature | ~~What-if analysis tool~~ | Medium | Medium | **DONE** |
 | 14 | Feature | Recommendation engine | High | Medium |
 | 15 | ML | Deep learning (TabNet/neural net) | Medium | High |
 | 16 | Code | Full modular refactor | Medium | High |
