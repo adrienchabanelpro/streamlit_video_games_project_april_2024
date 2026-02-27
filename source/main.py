@@ -30,10 +30,26 @@ else:
     )
 
 
+def _has_display() -> bool:
+    """Check if a graphical display is available (False on cloud)."""
+    return bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")
+                or os.name == "nt"  # Windows
+                or ("darwin" in os.uname().sysname.lower()))  # macOS
+
+
 def jeu_surprise():
     """Jeu Surprise page — launches a random pygame game."""
     st.title("THE GAME!!")
     st.write("Es-tu pret a donner le meilleur de toi meme?")
+
+    if not _has_display():
+        st.warning(
+            "Les mini-jeux Pygame necessitent un affichage graphique local. "
+            "Ils ne sont pas disponibles dans le deploiement cloud. "
+            "Clonez le projet et lancez-le localement pour y jouer!"
+        )
+        return
+
     if st.button("Clique ICI"):
         game_choice = random.choices(
             ['casse_brique.py', 'snake.py'], weights=[1, 1], k=1
