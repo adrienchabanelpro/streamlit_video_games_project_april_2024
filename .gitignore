@@ -26,3 +26,4 @@ Thumbs.db
 # Claude Code (session transcripts, auto-memory — not project config)
 .claude/projects/
 .claude/settings.local.json
+catboost_info/

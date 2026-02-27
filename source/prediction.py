@@ -1,7 +1,10 @@
 import os
 import streamlit as st
+import numpy as np
 import pandas as pd
 import lightgbm as lgb
+import xgboost as xgb
+import catboost as cb
 import joblib
 import warnings
 
@@ -25,9 +28,20 @@ _NUMERICAL_FEATURES = [
 
 
 @st.cache_resource
-def load_model():
-    model_path = os.path.join(_BASE_DIR, 'reports', 'model_v2_optuna.txt')
-    return lgb.Booster(model_file=model_path)
+def load_models():
+    """Load all 3 ensemble models (LightGBM, XGBoost, CatBoost)."""
+    lgb_model = lgb.Booster(
+        model_file=os.path.join(_BASE_DIR, 'reports', 'model_v2_optuna.txt')
+    )
+    xgb_model = xgb.XGBRegressor()
+    xgb_model.load_model(
+        os.path.join(_BASE_DIR, 'models', 'model_v2_xgboost.json')
+    )
+    cb_model = cb.CatBoostRegressor()
+    cb_model.load_model(
+        os.path.join(_BASE_DIR, 'models', 'model_v2_catboost.cbm')
+    )
+    return lgb_model, xgb_model, cb_model
 
 
 @st.cache_resource
@@ -153,7 +167,7 @@ def prediction_page():
     st.title("Prediction des ventes de jeux video")
 
     try:
-        model = load_model()
+        lgb_model, xgb_model, cb_model = load_models()
         train_stats = load_feature_means()
     except Exception as e:
         st.error(f"Erreur lors du chargement du modele : {e}")
@@ -224,8 +238,12 @@ def prediction_page():
                 # Encode + scale
                 df_ready = prepare_for_prediction(df_input, publisher_input)
 
-                # Predict
-                user_pred = model.predict(df_ready[_NUMERICAL_FEATURES])
+                # Ensemble predict (average of 3 models)
+                X = df_ready[_NUMERICAL_FEATURES]
+                pred_lgb = lgb_model.predict(X)
+                pred_xgb = xgb_model.predict(X.values)
+                pred_cb = cb_model.predict(X.values)
+                user_pred = (pred_lgb + pred_xgb + pred_cb) / 3
 
                 st.markdown(
                     f"""

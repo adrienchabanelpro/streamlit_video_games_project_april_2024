@@ -136,48 +136,102 @@ def modelisation():
         with open(training_log_path) as f:
             training_log = json.load(f)
 
-        metrics_v2 = training_log["metrics"]
+        raw_metrics = training_log["metrics"]
         best_params = training_log["best_params"]
 
-        # --- V1 vs V2 comparison ---
-        st.subheader("Comparaison v1 vs v2")
+        # Handle both old format (flat metrics) and new format (per-model metrics)
+        if "ensemble" in raw_metrics:
+            # New ensemble format
+            metrics_lgb = raw_metrics["lightgbm"]
+            metrics_xgb = raw_metrics["xgboost"]
+            metrics_cb = raw_metrics["catboost"]
+            metrics_ens = raw_metrics["ensemble"]
+            has_ensemble = True
+        else:
+            # Old single-model format
+            metrics_lgb = raw_metrics
+            has_ensemble = False
+
+        # --- Ensemble comparison ---
+        st.subheader("Comparaison des modeles")
         st.write("""
-        Le modele v2 corrige la fuite de donnees (features calculees sur l'ensemble
-        d'entrainement uniquement), remplace le one-hot encoding de Publisher
-        (567 colonnes) par du target encoding (1 colonne), et optimise les
-        hyperparametres avec Optuna (50 essais, validation croisee 5-fold).
+        Le modele v2 corrige la fuite de donnees, remplace le one-hot encoding
+        de Publisher (567 colonnes) par du target encoding (1 colonne), et
+        optimise les hyperparametres avec Optuna. Trois modeles sont entraines
+        (LightGBM, XGBoost, CatBoost) et combines en ensemble (moyenne).
         """)
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("**Modele v1 (original)**")
-            st.metric("R2", "0.9880")
-            st.metric("MSE", "0.0007")
-            st.metric("MAE", "0.0132")
-            st.caption("576 features (one-hot Publisher)")
-            st.caption("Split aleatoire (fuite temporelle possible)")
-
-        with col2:
-            st.markdown("**Modele v2 (Optuna)**")
-            st.metric("R2", f"{metrics_v2['r2']:.4f}")
-            st.metric("MSE", f"{metrics_v2['mse']:.6f}")
-            st.metric("MAE", f"{metrics_v2['mae']:.4f}")
-            st.caption(f"10 features (target-encoded Publisher)")
-            st.caption(f"Split temporel (<= {best_params.get('split_year', '?')})")
+        if has_ensemble:
+            comparison_data = {
+                "Modele": ["v1 (original)", "LightGBM", "XGBoost", "CatBoost", "Ensemble"],
+                "R2": [
+                    "0.9880*",
+                    f"{metrics_lgb['r2']:.4f}",
+                    f"{metrics_xgb['r2']:.4f}",
+                    f"{metrics_cb['r2']:.4f}",
+                    f"{metrics_ens['r2']:.4f}",
+                ],
+                "RMSE": [
+                    "0.0265*",
+                    f"{metrics_lgb['rmse']:.4f}",
+                    f"{metrics_xgb['rmse']:.4f}",
+                    f"{metrics_cb['rmse']:.4f}",
+                    f"{metrics_ens['rmse']:.4f}",
+                ],
+                "MAE": [
+                    "0.0132*",
+                    f"{metrics_lgb['mae']:.4f}",
+                    f"{metrics_xgb['mae']:.4f}",
+                    f"{metrics_cb['mae']:.4f}",
+                    f"{metrics_ens['mae']:.4f}",
+                ],
+            }
+            st.dataframe(
+                pd.DataFrame(comparison_data),
+                use_container_width=True,
+                hide_index=True,
+            )
+            st.caption("*v1 avait une fuite de donnees — scores non comparables directement")
+        else:
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("**Modele v1 (original)**")
+                st.metric("R2", "0.9880")
+                st.caption("576 features, fuite de donnees")
+            with col2:
+                st.markdown("**Modele v2 (Optuna)**")
+                st.metric("R2", f"{metrics_lgb['r2']:.4f}")
+                st.caption("10 features, split temporel")
 
         # Baseline comparison
-        st.write(f"**Baseline (predicteur moyen) — R2 : {metrics_v2['baseline_r2']:.4f}, "
-                 f"RMSE : {metrics_v2['baseline_rmse']:.4f}**")
+        baseline_r2 = metrics_lgb.get('baseline_r2', 'N/A')
+        baseline_rmse = metrics_lgb.get('baseline_rmse', 'N/A')
+        st.write(f"**Baseline (predicteur moyen) — R2 : {baseline_r2}, "
+                 f"RMSE : {baseline_rmse}**")
 
         # --- Best hyperparameters ---
         st.subheader("Meilleurs hyperparametres (Optuna)")
-        params_display = {k: v for k, v in best_params.items() if k != "split_year"}
-        params_display["split_year"] = best_params.get("split_year", "N/A")
 
-        params_df = pd.DataFrame(
-            list(params_display.items()), columns=["Parametre", "Valeur"]
-        )
-        st.dataframe(params_df, use_container_width=True, hide_index=True)
+        if isinstance(best_params.get("lightgbm"), dict):
+            # New format: per-model params
+            tab_lgb, tab_xgb, tab_cb = st.tabs(["LightGBM", "XGBoost", "CatBoost"])
+            for tab, name in [(tab_lgb, "lightgbm"), (tab_xgb, "xgboost"), (tab_cb, "catboost")]:
+                with tab:
+                    p = best_params[name]
+                    st.dataframe(
+                        pd.DataFrame(list(p.items()), columns=["Parametre", "Valeur"]),
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+        else:
+            # Old format: flat params
+            params_display = {k: v for k, v in best_params.items() if k != "split_year"}
+            params_display["split_year"] = best_params.get("split_year", "N/A")
+            st.dataframe(
+                pd.DataFrame(list(params_display.items()), columns=["Parametre", "Valeur"]),
+                use_container_width=True,
+                hide_index=True,
+            )
 
         # --- SHAP plots ---
         st.subheader("Importance des features (SHAP)")
