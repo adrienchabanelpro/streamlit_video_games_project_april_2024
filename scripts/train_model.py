@@ -61,6 +61,7 @@ REPORTS_DIR.mkdir(exist_ok=True)
 # ---------------------------------------------------------------------------
 RANDOM_STATE = 42
 TARGET = "Global_Sales"
+LOG_TRANSFORM = True  # Apply log1p to target before training
 NUMERICAL_FEATURES = [
     "Year",
     "meta_score",
@@ -271,6 +272,8 @@ def objective(trial: optuna.Trial, df: pd.DataFrame) -> float:
 
     X = df_train[NUMERICAL_FEATURES].values
     y = df_train[TARGET].values
+    if LOG_TRANSFORM:
+        y = np.log1p(y)
 
     # 5-fold CV
     kf = KFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
@@ -448,8 +451,16 @@ def evaluate_model(
     y_test: np.ndarray,
     global_mean: float,
 ) -> dict:
-    """Evaluate model on test set + compare against mean-predictor baseline."""
-    metrics = _compute_metrics(y_test, model.predict(X_test))
+    """Evaluate model on test set + compare against mean-predictor baseline.
+
+    If LOG_TRANSFORM is True, predictions are in log-space and y_test is raw,
+    so we inverse-transform predictions before computing metrics.
+    """
+    y_pred = model.predict(X_test)
+    if LOG_TRANSFORM:
+        y_pred = np.expm1(y_pred)
+
+    metrics = _compute_metrics(y_test, y_pred)
 
     # Baseline: always predict the training mean
     y_baseline = np.full_like(y_test, global_mean)
@@ -474,6 +485,8 @@ def evaluate_ensemble(
     """Evaluate average ensemble of multiple models."""
     preds = np.array([m.predict(X_test) for m in models])
     y_ensemble = preds.mean(axis=0)
+    if LOG_TRANSFORM:
+        y_ensemble = np.expm1(y_ensemble)
 
     metrics = _compute_metrics(y_test, y_ensemble)
 
@@ -562,6 +575,7 @@ def save_artifacts(
         "metrics": all_metrics,
         "features": NUMERICAL_FEATURES,
         "target": TARGET,
+        "log_transform": LOG_TRANSFORM,
         "random_state": RANDOM_STATE,
     }
     with open(REPORTS_DIR / "training_log.json", "w") as f:
@@ -639,9 +653,17 @@ def main() -> None:
     print("  Fitting StandardScaler...")
     scaler = StandardScaler()
     X_train = scaler.fit_transform(df_train[NUMERICAL_FEATURES])
-    y_train = df_train[TARGET].values
+    y_train_raw = df_train[TARGET].values
     X_test = scaler.transform(df_test[NUMERICAL_FEATURES])
-    y_test = df_test[TARGET].values
+    y_test_raw = df_test[TARGET].values
+
+    if LOG_TRANSFORM:
+        print("  Applying log1p transform to target...")
+        y_train = np.log1p(y_train_raw)
+        y_test = y_test_raw  # Keep raw for evaluation (we'll inverse-transform preds)
+    else:
+        y_train = y_train_raw
+        y_test = y_test_raw
 
     # ---- 5. Optuna — XGBoost ----
     print("\n[5/9] Optuna: XGBoost (30 trials)...")

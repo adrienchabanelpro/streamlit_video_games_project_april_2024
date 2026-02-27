@@ -9,6 +9,7 @@ import streamlit as st
 
 from prediction import (
     _NUMERICAL_FEATURES,
+    _is_log_transformed,
     _lookup_cumulative,
     load_feature_means,
     load_models,
@@ -63,7 +64,10 @@ def _predict_single(
     pred_lgb = lgb_model.predict(X)
     pred_xgb = xgb_model.predict(X.values)
     pred_cb = cb_model.predict(X.values)
-    return float((pred_lgb + pred_xgb + pred_cb) / 3)
+    result = float((pred_lgb + pred_xgb + pred_cb) / 3)
+    if _is_log_transformed():
+        result = float(np.expm1(result))
+    return result
 
 
 def what_if_page():

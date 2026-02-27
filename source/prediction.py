@@ -1,3 +1,4 @@
+import json
 import os
 import streamlit as st
 import numpy as np
@@ -57,6 +58,16 @@ def load_target_encoder():
 @st.cache_resource
 def load_feature_means():
     return joblib.load(os.path.join(_BASE_DIR, 'models', 'feature_means_v2.joblib'))
+
+
+@st.cache_data
+def _is_log_transformed() -> bool:
+    """Check if the trained model used log-transform on the target."""
+    log_path = os.path.join(_BASE_DIR, 'reports', 'training_log.json')
+    if os.path.exists(log_path):
+        with open(log_path) as f:
+            return json.load(f).get("log_transform", False)
+    return False
 
 
 def _lookup_cumulative(cumsum_dict: dict, category: str, year: int) -> float:
@@ -245,6 +256,8 @@ def prediction_page():
                 pred_xgb = xgb_model.predict(X.values)
                 pred_cb = cb_model.predict(X.values)
                 user_pred = (pred_lgb + pred_xgb + pred_cb) / 3
+                if _is_log_transformed():
+                    user_pred = np.expm1(user_pred)
 
                 st.markdown(
                     f"""
@@ -318,6 +331,8 @@ def prediction_page():
                             + xgb_model.predict(X.values)
                             + cb_model.predict(X.values)
                         ) / 3
+                        if _is_log_transformed():
+                            p = np.expm1(p)
                         results.append(round(float(p[0]), 4))
 
                     batch_df["Predicted_Sales_M"] = results

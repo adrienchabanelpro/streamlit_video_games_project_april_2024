@@ -29,7 +29,7 @@ This document outlines an ambitious roadmap to take this video game sales predic
 - [x] **Ensemble modeling** — LightGBM + XGBoost + CatBoost averaging ensemble. Each model Optuna-tuned (50+30+30 trials). Ensemble used in prediction app.
 - [x] **Target encoding** — Publisher now uses target encoding (1 column) instead of one-hot (567 columns). See `models/target_encoder_v2.joblib`.
 - [x] **Time-series aware splitting** — Temporal split (train <= split_year, test > split_year). Split year optimized by Optuna from [2013, 2014, 2015].
-- [ ] **Log-transform target** — Global_Sales is heavily right-skewed. Log-transforming it before training can significantly improve predictions on the long tail.
+- [x] **Log-transform target** — `np.log1p(y)` before training, `np.expm1(pred)` at inference. Flag stored in `reports/training_log.json`. Applied across single, batch, and what-if predictions.
 - [x] **Remove data leakage** — Regional sales dropped. Target-derived features (genre/platform means, cumulative sales) now computed on training data only. See `scripts/train_model.py`.
 
 ### Ambitious
@@ -152,10 +152,7 @@ This document outlines an ambitious roadmap to take this video game sales predic
 - [ ] **Docstrings** — Add Google-style docstrings to all public functions and classes.
 
 ### Ambitious
-- [ ] **CI/CD pipeline** — GitHub Actions for:
-  - Linting and type checking on every PR
-  - Running tests on every push
-  - Automated deployment on merge to main
+- [x] **CI/CD pipeline** — GitHub Actions workflow (`.github/workflows/ci.yml`) runs pytest on every push and PR to main. Uses Python 3.12 with pip caching.
 - [ ] **ML pipeline with MLflow** — Track experiments, log metrics, version models, and compare runs.
 - [ ] **Makefile / Task runner** — Centralize common commands (run, test, lint, train, deploy).
 
