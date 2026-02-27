@@ -4,7 +4,6 @@ import streamlit as st
 import lightgbm as lgb
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import fetch_california_housing
 from sklearn.metrics import mean_squared_error
@@ -58,12 +57,21 @@ def modelisation():
 
     # Schéma des avantages
     st.subheader("Avantages en un coup d'œil 📊")
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.barh(["Vitesse", "Précision", "Scalabilité", "Support des Valeurs Manquantes"], [90, 85, 95, 80], color='skyblue')
-    ax.set_xlabel("Importance (%)")
-    ax.set_title("Avantages de LightGBM")
-    st.pyplot(fig)
-    plt.close(fig)  # Ferme la figure après l'affichage
+    import plotly.express as px
+    adv_df = pd.DataFrame({
+        "Avantage": ["Vitesse", "Precision", "Scalabilite", "Support des Valeurs Manquantes"],
+        "Importance (%)": [90, 85, 95, 80],
+    })
+    fig_adv = px.bar(
+        adv_df, x="Importance (%)", y="Avantage", orientation="h",
+        color="Importance (%)", color_continuous_scale="Teal",
+        title="Avantages de LightGBM",
+    )
+    fig_adv.update_layout(
+        template="plotly_dark", paper_bgcolor="#0D0D0D", plot_bgcolor="#1A1A2E",
+        font=dict(color="#E0E0E0"), showlegend=False,
+    )
+    st.plotly_chart(fig_adv, use_container_width=True)
 
     # Interactivité avec l'utilisateur
     st.header("Essayez par vous-même ! 🎮")
@@ -93,14 +101,26 @@ def modelisation():
     st.write(f"Erreur Quadratique Moyenne (MSE) avec profondeur {max_depth} et taux d'apprentissage {learning_rate}: {mse:.2f}")
 
     # Comparaison des valeurs prédites et réelles
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.scatter(y_test, y_pred, alpha=0.3)
-    ax.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
-    ax.set_xlabel("Valeurs réelles")
-    ax.set_ylabel("Valeurs prédites")
-    ax.set_title("Comparaison des valeurs réelles et prédites")
-    st.pyplot(fig)
-    plt.close(fig)  # Ferme la figure après l'affichage
+    import plotly.graph_objects as go
+    fig_scatter = go.Figure()
+    fig_scatter.add_trace(go.Scatter(
+        x=y_test, y=y_pred, mode="markers",
+        marker=dict(color="#00FFCC", opacity=0.4, size=5),
+        name="Predictions",
+    ))
+    fig_scatter.add_trace(go.Scatter(
+        x=[y_test.min(), y_test.max()], y=[y_test.min(), y_test.max()],
+        mode="lines", line=dict(color="#FF6EC7", dash="dash", width=2),
+        name="Ideal",
+    ))
+    fig_scatter.update_layout(
+        title="Comparaison des valeurs reelles et predites",
+        xaxis_title="Valeurs reelles",
+        yaxis_title="Valeurs predites",
+        template="plotly_dark", paper_bgcolor="#0D0D0D", plot_bgcolor="#1A1A2E",
+        font=dict(color="#E0E0E0"),
+    )
+    st.plotly_chart(fig_scatter, use_container_width=True)
 
 
     # Conclusion

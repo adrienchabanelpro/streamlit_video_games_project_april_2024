@@ -254,6 +254,23 @@ def prediction_page():
                     """,
                     unsafe_allow_html=True,
                 )
+
+                # Export prediction as CSV
+                export_df = pd.DataFrame({
+                    "Publisher": [publisher_input],
+                    "Genre": [genre_input],
+                    "Platform": [platform_input],
+                    "Year": [input_data["Year"]],
+                    "meta_score": [input_data["meta_score"]],
+                    "user_review": [input_data["user_review"]],
+                    "Predicted_Sales_M": [round(user_pred[0], 4)],
+                })
+                st.download_button(
+                    "Telecharger la prediction (CSV)",
+                    export_df.to_csv(index=False),
+                    file_name="prediction.csv",
+                    mime="text/csv",
+                )
             except Exception as e:
                 st.error(f"Erreur lors de la prediction : {e}")
     else:
@@ -265,6 +282,54 @@ def prediction_page():
             """,
             unsafe_allow_html=True,
         )
+
+    # --- Batch prediction ---
+    st.markdown("---")
+    st.subheader("Prediction par lot")
+    st.write(
+        "Telechargez un fichier CSV avec les colonnes : "
+        "`Publisher`, `Genre`, `Platform`, `Year`, `meta_score`, `user_review`"
+    )
+    batch_file = st.file_uploader("Fichier CSV", type="csv", key="batch")
+
+    if batch_file is not None and st.button("Predire le lot"):
+        with st.spinner("Predictions en cours..."):
+            try:
+                batch_df = pd.read_csv(batch_file)
+                required = ["Publisher", "Genre", "Platform", "Year", "meta_score", "user_review"]
+                missing = [c for c in required if c not in batch_df.columns]
+                if missing:
+                    st.error(f"Colonnes manquantes : {', '.join(missing)}")
+                else:
+                    results = []
+                    for _, row in batch_df.iterrows():
+                        inp = {
+                            "Year": int(row["Year"]),
+                            "meta_score": float(row["meta_score"]),
+                            "user_review": float(row["user_review"]),
+                        }
+                        df_feat = get_features(
+                            inp, train_stats, row["Genre"], row["Platform"]
+                        )
+                        df_r = prepare_for_prediction(df_feat, row["Publisher"])
+                        X = df_r[_NUMERICAL_FEATURES]
+                        p = (
+                            lgb_model.predict(X)
+                            + xgb_model.predict(X.values)
+                            + cb_model.predict(X.values)
+                        ) / 3
+                        results.append(round(float(p[0]), 4))
+
+                    batch_df["Predicted_Sales_M"] = results
+                    st.dataframe(batch_df, use_container_width=True, hide_index=True)
+                    st.download_button(
+                        "Telecharger les resultats (CSV)",
+                        batch_df.to_csv(index=False),
+                        file_name="batch_predictions.csv",
+                        mime="text/csv",
+                    )
+            except Exception as e:
+                st.error(f"Erreur lors de la prediction par lot : {e}")
 
     st.markdown("---")
     st.markdown(

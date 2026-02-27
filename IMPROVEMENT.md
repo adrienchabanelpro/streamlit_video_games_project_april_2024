@@ -45,7 +45,7 @@ This document outlines an ambitious roadmap to take this video game sales predic
 - [x] **Streamlit page config** — Use `st.set_page_config()` with proper title, favicon, and wide layout mode.
 - [x] **Loading states** — Add `st.spinner()` around model loading and predictions so users know something is happening.
 - [x] **Better color palette** — Define a consistent color scheme (not just orange sidebar) using CSS variables. Consider a retro neon palette (dark background, neon green/pink/cyan accents).
-- [ ] **Responsive charts** — Replace static Matplotlib plots with Plotly everywhere for consistency and interactivity.
+- [x] **Responsive charts** — Replace static Matplotlib plots with Plotly everywhere for consistency and interactivity.
 
 ### Medium Effort
 - [x] **Multi-page app (native)** — Migrated to `st.navigation()` API with proper URL routing, page icons, and global sidebar branding.
@@ -64,14 +64,14 @@ This document outlines an ambitious roadmap to take this video game sales predic
 ## 3. New Features
 
 ### Quick Wins
-- [ ] **Export predictions as CSV/PDF** — Let users download prediction results with `st.download_button()`.
+- [x] **Export predictions as CSV/PDF** — Let users download prediction results with `st.download_button()`.
 - [ ] **Game comparison tool** — Side-by-side comparison of two games' predicted sales based on different parameters.
 - [ ] **Search & filter on DataViz** — Add search bars and multi-select filters for publishers, genres, and platforms on visualization pages.
 
 ### Medium Effort
 - [x] **Recommendation engine** — "Games like this" feature: given a game's attributes, find similar games using cosine similarity or k-NN on feature vectors.
 - [x] **What-if analysis** — Interactive sliders to see how changing one variable (e.g., meta_score from 60 to 90) impacts predicted sales, with real-time chart updates.
-- [ ] **Batch prediction** — Upload a CSV of multiple games and get predictions for all of them at once.
+- [x] **Batch prediction** — Upload a CSV of multiple games and get predictions for all of them at once.
 - [ ] **Historical trend explorer** — Interactive timeline showing how genres, platforms, and publishers evolved over decades.
 - [ ] **Publisher analytics dashboard** — Deep-dive into any publisher's historical performance, genre distribution, and predicted future.
 
