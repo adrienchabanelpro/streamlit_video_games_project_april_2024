@@ -1,96 +1,67 @@
 import os
-import joblib
-import pandas as pd
-import string
 import streamlit as st
-import nltk
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-from nltk.stem import WordNetLemmatizer
+import pandas as pd
+from transformers import pipeline
+
 
 _BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
+_MODEL_NAME = "distilbert-base-uncased-finetuned-sst-2-english"
 
 
 @st.cache_resource
-def _download_nltk_data():
-    nltk.download('stopwords', quiet=True)
-    nltk.download('punkt', quiet=True)
-    nltk.download('punkt_tab', quiet=True)
-    nltk.download('wordnet', quiet=True)
+def _load_sentiment_pipeline():
+    """Load the DistilBERT sentiment analysis pipeline (cached)."""
+    return pipeline(
+        "sentiment-analysis",
+        model=_MODEL_NAME,
+        truncation=True,
+        max_length=512,
+    )
 
 
-@st.cache_resource
-def _load_sentiment_models():
-    log_reg = joblib.load(os.path.join(_BASE_DIR, 'models', 'logistic_regression_model.pkl'))
-    tfidf_vectorizer = joblib.load(os.path.join(_BASE_DIR, 'models', 'tfidf_vectorizer.pkl'))
-    return log_reg, tfidf_vectorizer
+def predict_user_reviews(
+    uploaded_file,
+) -> tuple[pd.DataFrame | None, float | None, float | None]:
+    """Predict sentiment for each review in uploaded CSV.
 
+    Returns (dataframe_with_predictions, positive_pct, negative_pct).
+    """
+    classifier = _load_sentiment_pipeline()
 
-# Initialiser le lemmatizer
-lemmatizer = WordNetLemmatizer()
+    if uploaded_file is None:
+        return None, None, None
 
-# Fonction de nettoyage du texte
-def clean_text(text):
-    # Conversion en minuscules
-    text = text.lower()
+    try:
+        data = pd.read_csv(uploaded_file)
+    except Exception as e:
+        st.error(f"Erreur lors de la lecture du fichier CSV : {e}")
+        return None, None, None
 
-    # Suppression de la ponctuation
-    text = text.translate(str.maketrans('', '', string.punctuation))
+    if "user_review" not in data.columns:
+        st.warning("Le fichier CSV doit contenir une colonne 'user_review'.")
+        return None, None, None
 
-    # Suppression des chiffres
-    text = ''.join([i for i in text if not i.isdigit()])
+    try:
+        # Drop empty / NaN reviews
+        data = data.dropna(subset=["user_review"]).reset_index(drop=True)
+        reviews = data["user_review"].astype(str).tolist()
 
-    # Tokenisation
-    tokens = word_tokenize(text)
-
-    # Suppression des stop words
-    stop_words = set(stopwords.words('english'))
-    tokens = [word for word in tokens if word not in stop_words]
-
-    # Lemmatisation
-    tokens = [lemmatizer.lemmatize(word) for word in tokens]
-
-    # Rejoindre les tokens nettoyés en une chaîne de caractères
-    cleaned_text = ' '.join(tokens)
-
-    return cleaned_text
-
-# Fonction de prédiction
-def predict_user_reviews(uploaded_file):
-    _download_nltk_data()
-    log_reg, tfidf_vectorizer = _load_sentiment_models()
-
-    if uploaded_file is not None:
-        try:
-            # Lecture du fichier CSV
-            data = pd.read_csv(uploaded_file)
-        except Exception as e:
-            st.error(f"Erreur lors de la lecture du fichier CSV : {e}")
+        if not reviews:
+            st.warning("Aucun avis valide trouve dans le fichier.")
             return None, None, None
 
-        # Vérifier que la colonne 'user_review' existe
-        if 'user_review' in data.columns:
-            try:
-                # Nettoyer les critiques utilisateur
-                data['cleaned_user_review'] = data['user_review'].apply(clean_text)
+        # Batch prediction with DistilBERT
+        results = classifier(reviews, batch_size=32)
 
-                # Vectoriser les critiques utilisateur nettoyées
-                X = tfidf_vectorizer.transform(data['cleaned_user_review'])
+        data["sentiment"] = [r["label"] for r in results]
+        data["confidence"] = [r["score"] for r in results]
+        data["predictions"] = [1 if r["label"] == "POSITIVE" else 0 for r in results]
 
-                # Faire des prédictions
-                predictions = log_reg.predict(X)
-                # Ajouter les prédictions au DataFrame
-                data['predictions'] = predictions
+        positive_percentage = (data["predictions"] == 1).mean() * 100
+        negative_percentage = (data["predictions"] == 0).mean() * 100
 
-                # Calculer les pourcentages de prédictions positives et négatives
-                positive_percentage = (predictions == 1).mean() * 100
-                negative_percentage = (predictions == 0).mean() * 100
+        return data, positive_percentage, negative_percentage
 
-                return data, positive_percentage, negative_percentage
-            except Exception as e:
-                st.error(f"Erreur lors de l'analyse des avis : {e}")
-                return None, None, None
-        else:
-            st.warning("Le fichier CSV doit contenir une colonne 'user_review'.")
-            return None, None, None
-    return None, None, None
+    except Exception as e:
+        st.error(f"Erreur lors de l'analyse des avis : {e}")
+        return None, None, None

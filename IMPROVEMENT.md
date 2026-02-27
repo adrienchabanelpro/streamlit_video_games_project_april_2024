@@ -105,12 +105,12 @@ This document outlines an ambitious roadmap to take this video game sales predic
 ## 5. NLP & Sentiment Analysis
 
 ### Quick Wins
-- [ ] **Show confidence scores** — Display prediction probability alongside positive/negative labels.
+- [x] **Show confidence scores** — Display prediction probability alongside positive/negative labels.
 - [ ] **Word clouds** — Generate word clouds for positive vs negative reviews to visualize common themes.
 - [ ] **More sentiment granularity** — Move from binary (positive/negative) to 5-star rating prediction or fine-grained sentiment (very negative, negative, neutral, positive, very positive).
 
 ### Medium Effort
-- [ ] **Transformer models** — Replace Logistic Regression + TF-IDF with a pre-trained transformer:
+- [x] **Transformer models** — Replace Logistic Regression + TF-IDF with a pre-trained transformer:
   - `distilbert-base-uncased-finetuned-sst-2-english` for sentiment
   - Or fine-tune on gaming review data for domain-specific accuracy
 - [ ] **Aspect-based sentiment** — Extract sentiment per aspect (gameplay, graphics, story, value) rather than overall sentiment.
@@ -210,7 +210,7 @@ This document outlines an ambitious roadmap to take this video game sales predic
 | ~~5~~ | UI | ~~Streamlit native multi-page~~ | Medium | Low | **DONE** |
 | ~~6~~ | ML | ~~Ensemble (LightGBM + XGBoost + CatBoost)~~ | High | Medium | **DONE** |
 | ~~7~~ | ML | ~~Target encoding (replace one-hot)~~ | High | Medium | **DONE** |
-| 8 | NLP | Transformer-based sentiment | High | Medium |
+| ~~8~~ | NLP | ~~Transformer-based sentiment~~ | High | Medium | **DONE** |
 | 9 | UI | Dark mode + retro neon theme | Medium | Medium |
 | 10 | Data | Steam/IGDB API integration | High | Medium |
 | 11 | Code | Unit tests (pytest) | Medium | Medium |

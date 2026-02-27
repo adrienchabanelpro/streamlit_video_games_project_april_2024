@@ -19,3 +19,5 @@ shap
 category_encoders
 xgboost
 catboost
+transformers
+torch
