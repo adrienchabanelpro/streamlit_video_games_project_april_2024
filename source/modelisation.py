@@ -1,3 +1,4 @@
+import json
 import os
 import streamlit as st
 import lightgbm as lgb
@@ -7,6 +8,8 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import fetch_california_housing
 from sklearn.metrics import mean_squared_error
+
+_BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
 
 
 def modelisation():
@@ -118,6 +121,96 @@ def modelisation():
             LGBMRegressor MAE : Moyenne = 0.0132, Écart-type = 0.0013
 """)
 
+
+    # ------------------------------------------------------------------
+    # V2 Model: Optuna + SHAP results
+    # ------------------------------------------------------------------
+    st.markdown("---")
+    st.header("Modele v2 : Optimisation Optuna + SHAP")
+
+    training_log_path = os.path.join(_BASE_DIR, 'reports', 'training_log.json')
+    shap_summary_path = os.path.join(_BASE_DIR, 'reports', 'shap_summary.png')
+    shap_bar_path = os.path.join(_BASE_DIR, 'reports', 'shap_bar.png')
+
+    if os.path.exists(training_log_path):
+        with open(training_log_path) as f:
+            training_log = json.load(f)
+
+        metrics_v2 = training_log["metrics"]
+        best_params = training_log["best_params"]
+
+        # --- V1 vs V2 comparison ---
+        st.subheader("Comparaison v1 vs v2")
+        st.write("""
+        Le modele v2 corrige la fuite de donnees (features calculees sur l'ensemble
+        d'entrainement uniquement), remplace le one-hot encoding de Publisher
+        (567 colonnes) par du target encoding (1 colonne), et optimise les
+        hyperparametres avec Optuna (50 essais, validation croisee 5-fold).
+        """)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("**Modele v1 (original)**")
+            st.metric("R2", "0.9880")
+            st.metric("MSE", "0.0007")
+            st.metric("MAE", "0.0132")
+            st.caption("576 features (one-hot Publisher)")
+            st.caption("Split aleatoire (fuite temporelle possible)")
+
+        with col2:
+            st.markdown("**Modele v2 (Optuna)**")
+            st.metric("R2", f"{metrics_v2['r2']:.4f}")
+            st.metric("MSE", f"{metrics_v2['mse']:.6f}")
+            st.metric("MAE", f"{metrics_v2['mae']:.4f}")
+            st.caption(f"10 features (target-encoded Publisher)")
+            st.caption(f"Split temporel (<= {best_params.get('split_year', '?')})")
+
+        # Baseline comparison
+        st.write(f"**Baseline (predicteur moyen) — R2 : {metrics_v2['baseline_r2']:.4f}, "
+                 f"RMSE : {metrics_v2['baseline_rmse']:.4f}**")
+
+        # --- Best hyperparameters ---
+        st.subheader("Meilleurs hyperparametres (Optuna)")
+        params_display = {k: v for k, v in best_params.items() if k != "split_year"}
+        params_display["split_year"] = best_params.get("split_year", "N/A")
+
+        params_df = pd.DataFrame(
+            list(params_display.items()), columns=["Parametre", "Valeur"]
+        )
+        st.dataframe(params_df, use_container_width=True, hide_index=True)
+
+        # --- SHAP plots ---
+        st.subheader("Importance des features (SHAP)")
+        st.write("""
+        Les graphiques SHAP montrent quelles variables influencent le plus les
+        predictions du modele. Contrairement a l'importance classique basee sur
+        les splits, SHAP attribue a chaque feature une contribution precise et
+        interpretable pour chaque prediction.
+        """)
+
+        if os.path.exists(shap_bar_path):
+            st.image(
+                shap_bar_path,
+                caption="Importance moyenne des features (|SHAP|)",
+                use_container_width=True,
+            )
+        else:
+            st.warning("Le graphique SHAP (bar) est introuvable.")
+
+        if os.path.exists(shap_summary_path):
+            st.image(
+                shap_summary_path,
+                caption="Distribution SHAP par feature (beeswarm)",
+                use_container_width=True,
+            )
+        else:
+            st.warning("Le graphique SHAP (summary) est introuvable.")
+
+    else:
+        st.info(
+            "Le modele v2 n'a pas encore ete entraine. "
+            "Lancez `python scripts/train_model.py` pour generer les resultats."
+        )
 
     # Ajout d'un GIF fun lié aux jeux vidéo
     st.markdown("""

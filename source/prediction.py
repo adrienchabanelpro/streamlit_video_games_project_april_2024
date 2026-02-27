@@ -9,108 +9,157 @@ warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
 
 _BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
 
-
-@st.cache_data
-def load_data():
-    df_top = pd.read_csv(os.path.join(_BASE_DIR, 'data', 'df_topfeats.csv'))
-    df_features = pd.read_csv(os.path.join(_BASE_DIR, 'data', 'df_features.csv'))
-    return df_top, df_features
+# Feature order must match training script exactly
+_NUMERICAL_FEATURES = [
+    "Year",
+    "meta_score",
+    "user_review",
+    "Global_Sales_mean_genre",
+    "Global_Sales_mean_platform",
+    "Year_Global_Sales_mean_genre",
+    "Year_Global_Sales_mean_platform",
+    "Cumulative_Sales_Genre",
+    "Cumulative_Sales_Platform",
+    "Publisher_encoded",
+]
 
 
 @st.cache_resource
 def load_model():
-    model_path = os.path.join(_BASE_DIR, 'reports', 'model_final.txt')
+    model_path = os.path.join(_BASE_DIR, 'reports', 'model_v2_optuna.txt')
     return lgb.Booster(model_file=model_path)
 
 
 @st.cache_resource
 def load_numerical_transformer():
-    return joblib.load(os.path.join(_BASE_DIR, 'models', 'numerical_transformer.joblib'))
+    return joblib.load(os.path.join(_BASE_DIR, 'models', 'scaler_v2.joblib'))
 
 
+@st.cache_resource
+def load_target_encoder():
+    return joblib.load(os.path.join(_BASE_DIR, 'models', 'target_encoder_v2.joblib'))
 
-def get_input(df_features):
-    st.sidebar.header('Sélection des entrées')
+
+@st.cache_resource
+def load_feature_means():
+    return joblib.load(os.path.join(_BASE_DIR, 'models', 'feature_means_v2.joblib'))
+
+
+def _lookup_cumulative(cumsum_dict: dict, category: str, year: int) -> float:
+    """Look up cumulative sales for a category up to a given year."""
+    if category not in cumsum_dict:
+        return 0.0
+    yearly = cumsum_dict[category]
+    relevant_years = [y for y in yearly if y <= year]
+    if not relevant_years:
+        return 0.0
+    return yearly[max(relevant_years)]
+
+
+def get_input(train_stats: dict):
+    st.sidebar.header('Selection des entrees')
 
     input_data = {}
-    publisher_input = st.sidebar.selectbox('Sélectionnez l\'éditeur', df_features['Publisher'].unique())
-    genre_input = st.sidebar.selectbox('Sélectionnez le genre', df_features['Genre'].unique())
-    platform_input = st.sidebar.selectbox('Sélectionnez la plateforme', df_features['Platform'].unique())
+    publisher_input = st.sidebar.selectbox(
+        "Selectionnez l'editeur", train_stats['publishers']
+    )
+    genre_input = st.sidebar.selectbox(
+        'Selectionnez le genre', train_stats['genres']
+    )
+    platform_input = st.sidebar.selectbox(
+        'Selectionnez la plateforme', train_stats['platforms']
+    )
     years = list(range(1980, 2031))
-    year_input = st.sidebar.selectbox('Sélectionnez l\'année', years, index=years.index(2024))
+    year_input = st.sidebar.selectbox(
+        "Selectionnez l'annee", years, index=years.index(2024)
+    )
     input_data['Year'] = year_input
 
     meta_input = st.sidebar.number_input(
-        'Sélectionnez le score Metacritic',
+        'Selectionnez le score Metacritic',
         min_value=0.0,
         max_value=100.0,
-        value=float(df_features["meta_score"].mean()),
-        format="%.0f"
+        value=train_stats['meta_score_mean'],
+        format="%.0f",
     )
     input_data['meta_score'] = meta_input
 
     user_input = st.sidebar.number_input(
-        'Sélectionnez le score utilisateur',
+        'Selectionnez le score utilisateur',
         min_value=0.0,
         max_value=100.0,
-        value=float(df_features["user_review"].mean()),
-        format="%.1f"
+        value=train_stats['user_review_mean'],
+        format="%.1f",
     )
     input_data['user_review'] = user_input
 
     return publisher_input, genre_input, platform_input, input_data
 
-def get_features(input_data, df_features, genre_input, platform_input):
-    input_data['Global_Sales_mean_genre'] = df_features[df_features['Genre'] == genre_input]['Global_Sales_mean_genre'].mean()
-    input_data['Global_Sales_mean_platform'] = df_features.loc[df_features['Platform'] == platform_input]['Global_Sales_mean_platform'].mean()
-    input_data['Year_Global_Sales_mean_genre'] = input_data['Year'] * input_data['Global_Sales_mean_genre']
-    input_data['Year_Global_Sales_mean_platform'] = input_data['Year'] * input_data['Global_Sales_mean_platform']
 
-    df_input_data = pd.DataFrame(input_data, index=[0])
+def get_features(
+    input_data: dict,
+    train_stats: dict,
+    genre_input: str,
+    platform_input: str,
+) -> pd.DataFrame:
+    """Build feature vector using pre-computed training statistics."""
+    # Mean sales by genre/platform from training data
+    input_data['Global_Sales_mean_genre'] = train_stats['genre_means'].get(
+        genre_input, train_stats['global_sales_mean']
+    )
+    input_data['Global_Sales_mean_platform'] = train_stats['platform_means'].get(
+        platform_input, train_stats['global_sales_mean']
+    )
 
-    cumulative_sales_genre = df_features[
-        (df_features['Genre'] == genre_input) & 
-        (df_features['Year'] <= input_data['Year'])
-    ].sort_values('Year')['Global_Sales'].cumsum().iloc[-1]
-    
-    df_input_data["Cumulative_Sales_Genre"] = cumulative_sales_genre
+    # Interaction features
+    input_data['Year_Global_Sales_mean_genre'] = (
+        input_data['Year'] * input_data['Global_Sales_mean_genre']
+    )
+    input_data['Year_Global_Sales_mean_platform'] = (
+        input_data['Year'] * input_data['Global_Sales_mean_platform']
+    )
 
-    cumulative_sales_platform = df_features[
-        (df_features['Platform'] == platform_input) & 
-        (df_features['Year'] <= input_data['Year'])
-    ].sort_values('Year')['Global_Sales'].cumsum().iloc[-1]
-    
-    df_input_data["Cumulative_Sales_Platform"] = cumulative_sales_platform
+    # Cumulative sales from training data
+    input_data['Cumulative_Sales_Genre'] = _lookup_cumulative(
+        train_stats['cumsum_genre'], genre_input, input_data['Year']
+    )
+    input_data['Cumulative_Sales_Platform'] = _lookup_cumulative(
+        train_stats['cumsum_platform'], platform_input, input_data['Year']
+    )
 
-    return df_input_data
+    return pd.DataFrame(input_data, index=[0])
 
-def standardization(df_input_data, publisher_input, df_top):
-    numerical_features = [
-        'Year', 'meta_score', 'user_review',
-        'Global_Sales_mean_genre', 'Global_Sales_mean_platform', 'Year_Global_Sales_mean_genre',
-        'Year_Global_Sales_mean_platform',
-        'Cumulative_Sales_Genre', 'Cumulative_Sales_Platform'
-    ]
 
-    numerical_transformer = load_numerical_transformer()
-    df_input_data[numerical_features] = numerical_transformer.transform(df_input_data[numerical_features])
+def prepare_for_prediction(
+    df_input: pd.DataFrame, publisher_input: str
+) -> pd.DataFrame:
+    """Target-encode Publisher, scale features, return prediction-ready df."""
+    encoder = load_target_encoder()
+    scaler = load_numerical_transformer()
 
-    publisher_cols = ['Publisher_' + str(pub) for pub in df_top['Publisher'].unique()]
-    for col in publisher_cols:
-        df_input_data[col] = 0
-    df_input_data['Publisher_' + publisher_input] = 1
+    # Target encode Publisher (1 column instead of 567 one-hot columns)
+    pub_df = pd.DataFrame({"Publisher": [publisher_input]})
+    df_input["Publisher_encoded"] = encoder.transform(pub_df)["Publisher"].values
 
-    df_input_data = df_input_data.drop(['Publisher_10TACLE Studios'], axis=1)
+    # Scale all numerical features
+    df_input[_NUMERICAL_FEATURES] = scaler.transform(
+        df_input[_NUMERICAL_FEATURES]
+    )
 
-    return numerical_features, df_input_data
+    return df_input
+
 
 def prediction_page():
-    st.title("Prédiction des ventes de jeux vidéo")
+    st.title("Prediction des ventes de jeux video")
 
-    df_top, df_features = load_data()
-    model = load_model()
+    try:
+        model = load_model()
+        train_stats = load_feature_means()
+    except Exception as e:
+        st.error(f"Erreur lors du chargement du modele : {e}")
+        return
 
-    # CSS pour positionner l'écran de la borne d'arcade
+    # CSS for the arcade screen overlay
     st.markdown(
         """
         <style>
@@ -133,68 +182,79 @@ def prediction_page():
             text-align: center;
             font-size : 22px;
             position: absolute;
-            top: -300px; /* Ajustez cette valeur pour positionner le texte correctement */
+            top: -300px;
             left: 52%;
             transform: translate(-50%, -50%);
-            width: 65%; /* Ajustez cette valeur selon vos besoins */
-            height: 200px; /* Ajustez cette valeur selon vos besoins */
+            width: 65%;
+            height: 200px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
         </style>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
-    # Afficher l'image de la borne d'arcade
-    image_path = os.path.join(os.path.dirname(__file__), '..', 'images', 'street_arcade.jpg')
-
+    # Arcade machine image
+    image_path = os.path.join(
+        os.path.dirname(__file__), '..', 'images', 'street_arcade.jpg'
+    )
     if os.path.exists(image_path):
         st.image(image_path, width=1000)
     else:
-        st.write(f"Erreur : l'image {os.path.basename(image_path)} est introuvable. Vérifiez le dossier images/.")
+        st.write(
+            f"Erreur : l'image {os.path.basename(image_path)} est introuvable. "
+            "Verifiez le dossier images/."
+        )
 
-    # Obtenir les entrées utilisateur
-    publisher_input, genre_input, platform_input, input_data = get_input(df_features)
+    # User inputs (dropdowns populated from training stats)
+    publisher_input, genre_input, platform_input, input_data = get_input(
+        train_stats
+    )
 
-    if st.sidebar.button('Prédire'):
+    if st.sidebar.button('Predire'):
         with st.spinner("Calcul de la prediction..."):
             try:
-                # Obtenir les caractéristiques
-                df_input_data = get_features(input_data, df_features, genre_input, platform_input)
+                # Build feature vector from training stats
+                df_input = get_features(
+                    input_data, train_stats, genre_input, platform_input
+                )
 
-                # Standardiser les données
-                numerical_features, df_input_data_transformed = standardization(df_input_data, publisher_input, df_top)
+                # Encode + scale
+                df_ready = prepare_for_prediction(df_input, publisher_input)
 
-                # Prédire en fonction des entrées utilisateur
-                user_pred = model.predict(df_input_data_transformed)
+                # Predict
+                user_pred = model.predict(df_ready[_NUMERICAL_FEATURES])
 
-                # Superposer la prédiction sur l'image de la borne d'arcade
                 st.markdown(
-                f"""
-                <div class="arcade-container">
-                    <div class="arcade-screen">Prédiction pour les ventes:<br><br> {user_pred[0]:.4f} millions d'unités</div>
-                </div>
-                """,
-                unsafe_allow_html=True
+                    f"""
+                    <div class="arcade-container">
+                        <div class="arcade-screen">Prediction pour les ventes:<br><br> {user_pred[0]:.4f} millions d'unites</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
                 )
             except Exception as e:
                 st.error(f"Erreur lors de la prediction : {e}")
     else:
         st.markdown(
-        f"""
-        <div class="arcade-container">
-            <div class="arcade-screen">Entrez les informations nécessaires pour prédire les ventes globales d'un jeu vidéo</div>
-        </div>
-        """, 
-        unsafe_allow_html=True
+            """
+            <div class="arcade-container">
+                <div class="arcade-screen">Entrez les informations necessaires pour predire les ventes globales d'un jeu video</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
-       # st.header("Entrez les informations nécessaires pour prédire les ventes globales d'un jeu vidéo.")
-       # Ajouter le disclaimer en bas de la page
-    st.markdown("---")
-    st.markdown("<p style='text-align: center; color: gray;'>Ce modèle est en version bêta et peut faire des erreurs. Envisagez de vérifier les informations importantes.</p>", unsafe_allow_html=True)
 
-# Exécuter l'application
+    st.markdown("---")
+    st.markdown(
+        "<p style='text-align: center; color: gray;'>"
+        "Ce modele est en version beta et peut faire des erreurs. "
+        "Envisagez de verifier les informations importantes.</p>",
+        unsafe_allow_html=True,
+    )
+
+
 if __name__ == "__main__":
     prediction_page()

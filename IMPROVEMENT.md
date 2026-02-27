@@ -21,16 +21,16 @@ This document outlines an ambitious roadmap to take this video game sales predic
 ## 1. Machine Learning & Models
 
 ### Quick Wins
-- [ ] **Hyperparameter tuning with Optuna** — Replace manual slider-based tuning with automated Bayesian optimization. Optuna integrates directly with LightGBM and can find much better parameters.
-- [ ] **Proper cross-validation** — Implement k-fold CV (k=5 or 10) instead of single train/test split to get more robust performance estimates.
-- [ ] **Feature importance visualization** — Add SHAP (SHapley Additive exPlanations) plots to explain which features drive predictions. This is far more informative than basic feature importance.
+- [x] **Hyperparameter tuning with Optuna** — 50-trial Bayesian optimization with 5-fold CV. Split year also optimized. See `scripts/train_model.py`.
+- [x] **Proper cross-validation** — 5-fold CV integrated into Optuna objective function with temporal train/test split.
+- [x] **Feature importance visualization** — SHAP summary (beeswarm) and bar plots generated and displayed on Modelisation page. See `reports/shap_summary.png` and `reports/shap_bar.png`.
 
 ### Medium Effort
 - [ ] **Ensemble modeling** — Combine LightGBM with XGBoost and CatBoost in a stacking or voting ensemble. Each handles different patterns, and combining them typically yields 2-5% improvement.
-- [ ] **Target encoding** — Replace one-hot encoding of Publisher (576 columns!) with target encoding or frequency encoding. This drastically reduces dimensionality while preserving information.
-- [ ] **Time-series aware splitting** — Current random split leaks future data. Use temporal splits (train on pre-2015, test on 2015+) for realistic performance estimates.
+- [x] **Target encoding** — Publisher now uses target encoding (1 column) instead of one-hot (567 columns). See `models/target_encoder_v2.joblib`.
+- [x] **Time-series aware splitting** — Temporal split (train <= split_year, test > split_year). Split year optimized by Optuna from [2013, 2014, 2015].
 - [ ] **Log-transform target** — Global_Sales is heavily right-skewed. Log-transforming it before training can significantly improve predictions on the long tail.
-- [ ] **Remove data leakage** — Regional sales (NA_Sales, EU_Sales, JP_Sales, Other_Sales) should NOT be used as features since they directly compose Global_Sales. If they're being used, remove them.
+- [x] **Remove data leakage** — Regional sales dropped. Target-derived features (genre/platform means, cumulative sales) now computed on training data only. See `scripts/train_model.py`.
 
 ### Ambitious
 - [ ] **Deep learning with PyTorch/TensorFlow** — Build a neural network (tabular model) using embeddings for categorical features. Libraries like `pytorch-tabnet` or `fast.ai` make this accessible.
@@ -203,9 +203,9 @@ This document outlines an ambitious roadmap to take this video game sales predic
 
 | Priority | Category | Item | Impact | Effort |
 |----------|----------|------|--------|--------|
-| 1 | ML | Hyperparameter tuning (Optuna) | High | Low |
-| 2 | ML | Remove data leakage (regional sales) | Critical | Low |
-| 3 | ML | SHAP feature importance | High | Low |
+| ~~1~~ | ML | ~~Hyperparameter tuning (Optuna)~~ | High | Low | **DONE** |
+| ~~2~~ | ML | ~~Remove data leakage~~ | Critical | Low | **DONE** |
+| ~~3~~ | ML | ~~SHAP feature importance~~ | High | Low | **DONE** |
 | 4 | Code | Caching with @st.cache_data | High | Low |
 | 5 | UI | Streamlit native multi-page | Medium | Low |
 | 6 | ML | Ensemble (LightGBM + XGBoost + CatBoost) | High | Medium |

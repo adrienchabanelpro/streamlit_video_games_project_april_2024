@@ -1,0 +1,39 @@
+{
+  "timestamp": "2026-02-27T20:03:31.701764",
+  "best_params": {
+    "split_year": 2015,
+    "learning_rate": 0.24950292438859506,
+    "num_leaves": 122,
+    "max_depth": 12,
+    "min_child_samples": 73,
+    "reg_alpha": 4.339163978101165,
+    "reg_lambda": 4.637465663142268e-05,
+    "subsample": 0.6736217261996928,
+    "colsample_bytree": 0.7977597907509897,
+    "n_estimators": 620
+  },
+  "metrics": {
+    "r2": -3.2806184109384926,
+    "mse": 1.0120224473901998,
+    "rmse": 1.0059932640878864,
+    "mae": 0.5044465302188101,
+    "baseline_r2": -0.49528699471494386,
+    "baseline_mse": 0.35351527715603653,
+    "baseline_rmse": 0.5945715071848268,
+    "baseline_mae": 0.48917202158317485
+  },
+  "features": [
+    "Year",
+    "meta_score",
+    "user_review",
+    "Global_Sales_mean_genre",
+    "Global_Sales_mean_platform",
+    "Year_Global_Sales_mean_genre",
+    "Year_Global_Sales_mean_platform",
+    "Cumulative_Sales_Genre",
+    "Cumulative_Sales_Platform",
+    "Publisher_encoded"
+  ],
+  "target": "Global_Sales",
+  "random_state": 42
+}
