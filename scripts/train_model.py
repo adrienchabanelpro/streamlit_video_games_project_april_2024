@@ -4,7 +4,8 @@ Implements:
 - Temporal train/test split (no data leakage)
 - Feature engineering computed on training data only
 - Target encoding for Publisher (replaces 567-column one-hot)
-- Optuna hyperparameter tuning with 5-fold CV
+- Optuna hyperparameter tuning with 5-fold CV (LightGBM, XGBoost, CatBoost)
+- Stacking ensemble (average of 3 models)
 - SHAP feature importance plots
 - Full artifact saving for reproducibility
 
@@ -12,13 +13,15 @@ Usage:
     python scripts/train_model.py
 
 Outputs saved to models/ and reports/:
-    - reports/model_v2_optuna.txt    (LightGBM model)
-    - models/scaler_v2.joblib        (StandardScaler)
+    - reports/model_v2_optuna.txt     (LightGBM model)
+    - models/model_v2_xgboost.json    (XGBoost model)
+    - models/model_v2_catboost.cbm    (CatBoost model)
+    - models/scaler_v2.joblib         (StandardScaler)
     - models/target_encoder_v2.joblib (Publisher target encoder)
-    - models/feature_means_v2.joblib (genre/platform means + cumulative stats)
+    - models/feature_means_v2.joblib  (genre/platform means + cumulative stats)
     - reports/shap_summary.png
     - reports/shap_bar.png
-    - reports/training_log.json      (params, metrics, timestamp)
+    - reports/training_log.json       (params, metrics, timestamp)
 """
 
 import json
@@ -26,6 +29,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+import catboost as cb
 import category_encoders as ce
 import joblib
 import lightgbm as lgb
@@ -36,6 +40,7 @@ import numpy as np
 import optuna
 import pandas as pd
 import shap
+import xgboost as xgb
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
@@ -295,6 +300,86 @@ def objective(trial: optuna.Trial, df: pd.DataFrame) -> float:
 
 
 # ---------------------------------------------------------------------------
+# Optuna objectives — XGBoost & CatBoost
+# ---------------------------------------------------------------------------
+def objective_xgb(
+    trial: optuna.Trial, X: np.ndarray, y: np.ndarray
+) -> float:
+    """Optuna objective for XGBoost with 5-fold CV."""
+    params = {
+        "learning_rate": trial.suggest_float(
+            "learning_rate", 0.01, 0.3, log=True
+        ),
+        "max_depth": trial.suggest_int("max_depth", 3, 12),
+        "min_child_weight": trial.suggest_int("min_child_weight", 1, 100),
+        "reg_alpha": trial.suggest_float("reg_alpha", 1e-8, 10.0, log=True),
+        "reg_lambda": trial.suggest_float(
+            "reg_lambda", 1e-8, 10.0, log=True
+        ),
+        "subsample": trial.suggest_float("subsample", 0.5, 1.0),
+        "colsample_bytree": trial.suggest_float(
+            "colsample_bytree", 0.5, 1.0
+        ),
+        "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
+    }
+
+    kf = KFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
+    scores: list[float] = []
+
+    for train_idx, val_idx in kf.split(X):
+        model = xgb.XGBRegressor(
+            **params,
+            early_stopping_rounds=50,
+            random_state=RANDOM_STATE,
+            verbosity=0,
+            n_jobs=-1,
+        )
+        model.fit(
+            X[train_idx],
+            y[train_idx],
+            eval_set=[(X[val_idx], y[val_idx])],
+            verbose=False,
+        )
+        scores.append(r2_score(y[val_idx], model.predict(X[val_idx])))
+
+    return float(np.mean(scores))
+
+
+def objective_cb(
+    trial: optuna.Trial, X: np.ndarray, y: np.ndarray
+) -> float:
+    """Optuna objective for CatBoost with 5-fold CV."""
+    params = {
+        "learning_rate": trial.suggest_float(
+            "learning_rate", 0.01, 0.3, log=True
+        ),
+        "depth": trial.suggest_int("depth", 3, 10),
+        "l2_leaf_reg": trial.suggest_float(
+            "l2_leaf_reg", 1e-8, 10.0, log=True
+        ),
+        "subsample": trial.suggest_float("subsample", 0.5, 1.0),
+        "iterations": trial.suggest_int("iterations", 100, 1000),
+    }
+
+    kf = KFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
+    scores: list[float] = []
+
+    for train_idx, val_idx in kf.split(X):
+        model = cb.CatBoostRegressor(
+            **params, random_seed=RANDOM_STATE, verbose=0
+        )
+        model.fit(
+            X[train_idx],
+            y[train_idx],
+            eval_set=(X[val_idx], y[val_idx]),
+            early_stopping_rounds=50,
+        )
+        scores.append(r2_score(y[val_idx], model.predict(X[val_idx])))
+
+    return float(np.mean(scores))
+
+
+# ---------------------------------------------------------------------------
 # Final training
 # ---------------------------------------------------------------------------
 def train_final_model(
@@ -302,7 +387,7 @@ def train_final_model(
     y_train: np.ndarray,
     best_params: dict,
 ) -> lgb.LGBMRegressor:
-    """Train the final model with best hyperparameters on full train set."""
+    """Train the final LightGBM model with best hyperparameters."""
     model_params = {k: v for k, v in best_params.items() if k != "split_year"}
 
     model = lgb.LGBMRegressor(
@@ -315,24 +400,56 @@ def train_final_model(
     return model
 
 
+def train_final_xgb(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    best_params: dict,
+) -> xgb.XGBRegressor:
+    """Train the final XGBoost model with best hyperparameters."""
+    model = xgb.XGBRegressor(
+        **best_params,
+        random_state=RANDOM_STATE,
+        verbosity=0,
+        n_jobs=-1,
+    )
+    model.fit(X_train, y_train)
+    return model
+
+
+def train_final_cb(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    best_params: dict,
+) -> cb.CatBoostRegressor:
+    """Train the final CatBoost model with best hyperparameters."""
+    model = cb.CatBoostRegressor(
+        **best_params, random_seed=RANDOM_STATE, verbose=0
+    )
+    model.fit(X_train, y_train)
+    return model
+
+
 # ---------------------------------------------------------------------------
 # Evaluation
 # ---------------------------------------------------------------------------
-def evaluate_model(
-    model: lgb.LGBMRegressor,
-    X_test: np.ndarray,
-    y_test: np.ndarray,
-    global_mean: float,
-) -> dict:
-    """Evaluate model on test set + compare against mean-predictor baseline."""
-    y_pred = model.predict(X_test)
-
-    metrics = {
+def _compute_metrics(y_test: np.ndarray, y_pred: np.ndarray) -> dict:
+    """Compute R2, MSE, RMSE, MAE for a set of predictions."""
+    return {
         "r2": float(r2_score(y_test, y_pred)),
         "mse": float(mean_squared_error(y_test, y_pred)),
         "rmse": float(np.sqrt(mean_squared_error(y_test, y_pred))),
         "mae": float(mean_absolute_error(y_test, y_pred)),
     }
+
+
+def evaluate_model(
+    model,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    global_mean: float,
+) -> dict:
+    """Evaluate model on test set + compare against mean-predictor baseline."""
+    metrics = _compute_metrics(y_test, model.predict(X_test))
 
     # Baseline: always predict the training mean
     y_baseline = np.full_like(y_test, global_mean)
@@ -343,6 +460,27 @@ def evaluate_model(
     )
     metrics["baseline_mae"] = float(
         mean_absolute_error(y_test, y_baseline)
+    )
+
+    return metrics
+
+
+def evaluate_ensemble(
+    models: list,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    global_mean: float,
+) -> dict:
+    """Evaluate average ensemble of multiple models."""
+    preds = np.array([m.predict(X_test) for m in models])
+    y_ensemble = preds.mean(axis=0)
+
+    metrics = _compute_metrics(y_test, y_ensemble)
+
+    y_baseline = np.full_like(y_test, global_mean)
+    metrics["baseline_r2"] = float(r2_score(y_test, y_baseline))
+    metrics["baseline_rmse"] = float(
+        np.sqrt(mean_squared_error(y_test, y_baseline))
     )
 
     return metrics
@@ -393,16 +531,24 @@ def generate_shap_plots(
 # Artifact saving
 # ---------------------------------------------------------------------------
 def save_artifacts(
-    model: lgb.LGBMRegressor,
+    lgb_model: lgb.LGBMRegressor,
+    xgb_model: xgb.XGBRegressor,
+    cb_model: cb.CatBoostRegressor,
     scaler: StandardScaler,
     encoder: ce.TargetEncoder,
     train_stats: dict,
-    best_params: dict,
-    metrics: dict,
+    all_params: dict,
+    all_metrics: dict,
 ) -> None:
-    """Save all artifacts for reproducibility and inference."""
-    # LightGBM model (native format)
-    model.booster_.save_model(str(REPORTS_DIR / "model_v2_optuna.txt"))
+    """Save all model artifacts for reproducibility and inference."""
+    # LightGBM (native format)
+    lgb_model.booster_.save_model(str(REPORTS_DIR / "model_v2_optuna.txt"))
+
+    # XGBoost (JSON format)
+    xgb_model.save_model(str(MODELS_DIR / "model_v2_xgboost.json"))
+
+    # CatBoost (native format)
+    cb_model.save_model(str(MODELS_DIR / "model_v2_catboost.cbm"))
 
     # Transformers
     joblib.dump(scaler, MODELS_DIR / "scaler_v2.joblib")
@@ -412,8 +558,8 @@ def save_artifacts(
     # Training log
     log = {
         "timestamp": datetime.now().isoformat(),
-        "best_params": best_params,
-        "metrics": metrics,
+        "best_params": all_params,
+        "metrics": all_metrics,
         "features": NUMERICAL_FEATURES,
         "target": TARGET,
         "random_state": RANDOM_STATE,
@@ -421,64 +567,66 @@ def save_artifacts(
     with open(REPORTS_DIR / "training_log.json", "w") as f:
         json.dump(log, f, indent=2)
 
-    print(f"  Model        -> {REPORTS_DIR / 'model_v2_optuna.txt'}")
-    print(f"  Scaler       -> {MODELS_DIR / 'scaler_v2.joblib'}")
-    print(f"  Encoder      -> {MODELS_DIR / 'target_encoder_v2.joblib'}")
-    print(f"  Feature means-> {MODELS_DIR / 'feature_means_v2.joblib'}")
-    print(f"  Training log -> {REPORTS_DIR / 'training_log.json'}")
+    print(f"  LightGBM  -> {REPORTS_DIR / 'model_v2_optuna.txt'}")
+    print(f"  XGBoost   -> {MODELS_DIR / 'model_v2_xgboost.json'}")
+    print(f"  CatBoost  -> {MODELS_DIR / 'model_v2_catboost.cbm'}")
+    print(f"  Scaler    -> {MODELS_DIR / 'scaler_v2.joblib'}")
+    print(f"  Encoder   -> {MODELS_DIR / 'target_encoder_v2.joblib'}")
+    print(f"  Stats     -> {MODELS_DIR / 'feature_means_v2.joblib'}")
+    print(f"  Log       -> {REPORTS_DIR / 'training_log.json'}")
 
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+def _print_metrics(name: str, m: dict) -> None:
+    """Pretty-print evaluation metrics for a model."""
+    print(f"  {name:12s}  R2={m['r2']:.4f}  RMSE={m['rmse']:.4f}  MAE={m['mae']:.4f}")
+
+
 def main() -> None:
-    """Run the full training pipeline."""
+    """Run the full training pipeline (LightGBM + XGBoost + CatBoost ensemble)."""
     print("=" * 60)
-    print("Video Game Sales - Training Pipeline v2")
+    print("Video Game Sales - Training Pipeline v2 (Ensemble)")
     print("=" * 60)
 
     # ---- 1. Load & clean ----
-    print("\n[1/7] Loading and cleaning data...")
+    print("\n[1/9] Loading and cleaning data...")
     df = load_and_clean_data(DATA_DIR / "Ventes_jeux_video_final.csv")
     print(f"  {len(df)} rows, {len(df.columns)} columns")
     print(f"  Year range: {df['Year'].min()} - {df['Year'].max()}")
     print(f"  Unique publishers: {df['Publisher'].nunique()}")
 
-    # ---- 2. Optuna tuning ----
-    print("\n[2/7] Optuna hyperparameter tuning (50 trials)...")
+    # ---- 2. Optuna — LightGBM ----
+    print("\n[2/9] Optuna: LightGBM (50 trials)...")
     optuna.logging.set_verbosity(optuna.logging.WARNING)
-    study = optuna.create_study(
+    study_lgb = optuna.create_study(
         direction="maximize",
         sampler=optuna.samplers.TPESampler(seed=RANDOM_STATE),
     )
-    study.optimize(
+    study_lgb.optimize(
         lambda trial: objective(trial, df),
         n_trials=50,
         show_progress_bar=True,
     )
 
-    best_params = study.best_params
-    best_score = study.best_value
-    best_split_year = best_params["split_year"]
-    print(f"  Best CV R2: {best_score:.4f}")
+    best_lgb_params = study_lgb.best_params
+    best_split_year = best_lgb_params["split_year"]
+    print(f"  Best CV R2: {study_lgb.best_value:.4f}")
     print(f"  Best split_year: {best_split_year}")
-    print(
-        f"  Best params: {json.dumps({k: v for k, v in best_params.items() if k != 'split_year'}, indent=4)}"
-    )
 
-    # ---- 3. Final temporal split ----
-    print(f"\n[3/7] Splitting data at year {best_split_year}...")
+    # ---- 3. Prepare data with best split_year ----
+    print(f"\n[3/9] Splitting data at year {best_split_year}...")
     df_train, df_test = temporal_train_test_split(df, best_split_year)
     print(f"  Train: {len(df_train)} rows (<= {best_split_year})")
     print(f"  Test:  {len(df_test)} rows (> {best_split_year})")
 
     # ---- 4. Feature engineering ----
-    print("\n[4/7] Feature engineering (train stats only)...")
+    print("\n[4/9] Feature engineering (train stats only)...")
     train_stats = compute_train_stats(df_train)
     df_train = compute_engineered_features(df_train, train_stats)
     df_test = compute_engineered_features(df_test, train_stats)
 
-    # Target-encode Publisher
     print("  Fitting target encoder on Publisher...")
     encoder = ce.TargetEncoder(cols=["Publisher"], smoothing=10)
     df_train["Publisher_encoded"] = encoder.fit_transform(
@@ -488,7 +636,6 @@ def main() -> None:
         df_test[["Publisher"]]
     )["Publisher"]
 
-    # Scale numerical features
     print("  Fitting StandardScaler...")
     scaler = StandardScaler()
     X_train = scaler.fit_transform(df_train[NUMERICAL_FEATURES])
@@ -496,31 +643,84 @@ def main() -> None:
     X_test = scaler.transform(df_test[NUMERICAL_FEATURES])
     y_test = df_test[TARGET].values
 
-    # ---- 5. Train final model ----
-    print("\n[5/7] Training final model with best hyperparameters...")
-    model = train_final_model(X_train, y_train, best_params)
+    # ---- 5. Optuna — XGBoost ----
+    print("\n[5/9] Optuna: XGBoost (30 trials)...")
+    study_xgb = optuna.create_study(
+        direction="maximize",
+        sampler=optuna.samplers.TPESampler(seed=RANDOM_STATE + 1),
+    )
+    study_xgb.optimize(
+        lambda trial: objective_xgb(trial, X_train, y_train),
+        n_trials=30,
+        show_progress_bar=True,
+    )
+    best_xgb_params = study_xgb.best_params
+    print(f"  Best CV R2: {study_xgb.best_value:.4f}")
 
-    # ---- 6. Evaluate ----
-    print("\n[6/7] Evaluating on test set...")
-    metrics = evaluate_model(model, X_test, y_test, train_stats["global_sales_mean"])
-    print(f"  R2:   {metrics['r2']:.4f}")
-    print(f"  MSE:  {metrics['mse']:.6f}")
-    print(f"  RMSE: {metrics['rmse']:.4f}")
-    print(f"  MAE:  {metrics['mae']:.4f}")
-    print(f"  --- Baseline (mean predictor) ---")
-    print(f"  R2:   {metrics['baseline_r2']:.4f}")
-    print(f"  RMSE: {metrics['baseline_rmse']:.4f}")
+    # ---- 6. Optuna — CatBoost ----
+    print("\n[6/9] Optuna: CatBoost (30 trials)...")
+    study_cb = optuna.create_study(
+        direction="maximize",
+        sampler=optuna.samplers.TPESampler(seed=RANDOM_STATE + 2),
+    )
+    study_cb.optimize(
+        lambda trial: objective_cb(trial, X_train, y_train),
+        n_trials=30,
+        show_progress_bar=True,
+    )
+    best_cb_params = study_cb.best_params
+    print(f"  Best CV R2: {study_cb.best_value:.4f}")
 
-    # ---- 7. SHAP ----
-    print("\n[7/7] Generating SHAP plots...")
-    generate_shap_plots(model, X_test, NUMERICAL_FEATURES, REPORTS_DIR)
+    # ---- 7. Train final models ----
+    print("\n[7/9] Training final models...")
+    lgb_model = train_final_model(X_train, y_train, best_lgb_params)
+    print("  LightGBM trained")
+    xgb_model = train_final_xgb(X_train, y_train, best_xgb_params)
+    print("  XGBoost trained")
+    cb_model = train_final_cb(X_train, y_train, best_cb_params)
+    print("  CatBoost trained")
+
+    # ---- 8. Evaluate all models + ensemble ----
+    print("\n[8/9] Evaluating on test set...")
+    gm = train_stats["global_sales_mean"]
+    metrics_lgb = evaluate_model(lgb_model, X_test, y_test, gm)
+    metrics_xgb = evaluate_model(xgb_model, X_test, y_test, gm)
+    metrics_cb = evaluate_model(cb_model, X_test, y_test, gm)
+    metrics_ens = evaluate_ensemble(
+        [lgb_model, xgb_model, cb_model], X_test, y_test, gm
+    )
+
+    _print_metrics("LightGBM", metrics_lgb)
+    _print_metrics("XGBoost", metrics_xgb)
+    _print_metrics("CatBoost", metrics_cb)
+    _print_metrics("Ensemble", metrics_ens)
+    print(f"  {'Baseline':12s}  R2={metrics_lgb['baseline_r2']:.4f}  "
+          f"RMSE={metrics_lgb['baseline_rmse']:.4f}")
+
+    # ---- 9. SHAP (using LightGBM) ----
+    print("\n[9/9] Generating SHAP plots (LightGBM)...")
+    generate_shap_plots(lgb_model, X_test, NUMERICAL_FEATURES, REPORTS_DIR)
 
     # ---- Save ----
     print("\nSaving artifacts...")
-    save_artifacts(model, scaler, encoder, train_stats, best_params, metrics)
+    all_params = {
+        "lightgbm": best_lgb_params,
+        "xgboost": best_xgb_params,
+        "catboost": best_cb_params,
+    }
+    all_metrics = {
+        "lightgbm": metrics_lgb,
+        "xgboost": metrics_xgb,
+        "catboost": metrics_cb,
+        "ensemble": metrics_ens,
+    }
+    save_artifacts(
+        lgb_model, xgb_model, cb_model,
+        scaler, encoder, train_stats, all_params, all_metrics,
+    )
 
     print("\n" + "=" * 60)
-    print("Training complete!")
+    print("Training complete! (3 models + ensemble)")
     print("=" * 60)
 
 

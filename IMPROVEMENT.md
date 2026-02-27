@@ -26,7 +26,7 @@ This document outlines an ambitious roadmap to take this video game sales predic
 - [x] **Feature importance visualization** — SHAP summary (beeswarm) and bar plots generated and displayed on Modelisation page. See `reports/shap_summary.png` and `reports/shap_bar.png`.
 
 ### Medium Effort
-- [ ] **Ensemble modeling** — Combine LightGBM with XGBoost and CatBoost in a stacking or voting ensemble. Each handles different patterns, and combining them typically yields 2-5% improvement.
+- [x] **Ensemble modeling** — LightGBM + XGBoost + CatBoost averaging ensemble. Each model Optuna-tuned (50+30+30 trials). Ensemble used in prediction app.
 - [x] **Target encoding** — Publisher now uses target encoding (1 column) instead of one-hot (567 columns). See `models/target_encoder_v2.joblib`.
 - [x] **Time-series aware splitting** — Temporal split (train <= split_year, test > split_year). Split year optimized by Optuna from [2013, 2014, 2015].
 - [ ] **Log-transform target** — Global_Sales is heavily right-skewed. Log-transforming it before training can significantly improve predictions on the long tail.
@@ -208,7 +208,7 @@ This document outlines an ambitious roadmap to take this video game sales predic
 | ~~3~~ | ML | ~~SHAP feature importance~~ | High | Low | **DONE** |
 | ~~4~~ | Code | ~~Caching with @st.cache_data~~ | High | Low | **DONE** |
 | ~~5~~ | UI | ~~Streamlit native multi-page~~ | Medium | Low | **DONE** |
-| 6 | ML | Ensemble (LightGBM + XGBoost + CatBoost) | High | Medium |
+| ~~6~~ | ML | ~~Ensemble (LightGBM + XGBoost + CatBoost)~~ | High | Medium | **DONE** |
 | ~~7~~ | ML | ~~Target encoding (replace one-hot)~~ | High | Medium | **DONE** |
 | 8 | NLP | Transformer-based sentiment | High | Medium |
 | 9 | UI | Dark mode + retro neon theme | Medium | Medium |

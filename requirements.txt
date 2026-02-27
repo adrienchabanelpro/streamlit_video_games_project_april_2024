@@ -17,3 +17,5 @@ statsmodels
 optuna
 shap
 category_encoders
+xgboost
+catboost
