@@ -73,7 +73,7 @@ def  perception():
                 return f'rgba({red},{green},{blue},{alpha})'
 
                 # Chemin de votre image locale
-            image_path = "street_fighter2.png"  # Remplacez par le chemin de votre image
+            image_path = os.path.join(os.path.dirname(__file__), '..', 'images', 'street_fighter2.png')
             encoded_image = pil_to_base64(image_path)
 
             # Créer les étapes de dégradé
