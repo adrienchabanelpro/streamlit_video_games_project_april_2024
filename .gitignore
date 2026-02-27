@@ -1,9 +1,28 @@
-# Ignorer les fichiers système et Conda
+# Virtual environments
+.venv/
+venv/
+env/
 .conda/
 .pkgs/
-env/
-venv/
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
+*.egg-info/
+dist/
+build/
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude Code (session transcripts, auto-memory — not project config)
+.claude/projects/
+.claude/settings.local.json
