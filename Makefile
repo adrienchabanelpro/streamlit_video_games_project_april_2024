@@ -1,4 +1,4 @@
-.PHONY: run test lint format train clean install install-dev help dvc-repro mlflow
+.PHONY: run test lint format train clean install install-dev help dvc-repro mlflow collect-data
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -29,6 +29,9 @@ dvc-repro: ## Reproduce DVC pipeline (train + track outputs)
 
 mlflow: ## Launch MLflow UI
 	mlflow ui --port 5000
+
+collect-data: ## Run data collection pipeline (Kaggle + SteamSpy + merge)
+	python -m scripts.data_collection.run_pipeline
 
 clean: ## Remove Python cache files
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null; \
