@@ -1,31 +1,33 @@
-# main.py
+"""Main entry point: multi-page Streamlit app with retro neon theme."""
+
 import os
 import random
 import subprocess
 from pathlib import Path
 
 import streamlit as st
-from comparison import comparison_page
 from config import IMAGES_DIR
-from dataviz import dataviz_page
-from feature_engineering import feature_engineering_page
-from leaderboard import leaderboard_page
-from methodologie import methodologie_page
-from modelisation import modelisation_page
-from perception import perception_page
-from perspectives import perspectives_page
-from pong_streamlit import pong_page
+from pages.comparison import comparison_page
+from pages.dataviz import dataviz_page
+from pages.feature_engineering import feature_engineering_page
+from pages.leaderboard import leaderboard_page
+from pages.methodologie import methodologie_page
+from pages.modelisation import modelisation_page
+from pages.perception import perception_page
+from pages.perspectives import perspectives_page
+from pages.pong_streamlit import pong_page
+from pages.presentation import presentation_page
+from pages.recommendation import recommendation_page
+from pages.trends import trends_page
+from pages.what_if import what_if_page
 from prediction import prediction_page
-from presentation import presentation_page
-from recommendation import recommendation_page
 from style import apply_style
-from trends import trends_page
-from what_if import what_if_page
 
 st.set_page_config(page_title="Prediction Jeux Video", page_icon="🎮", layout="wide")
 
 # Apply global style (persists across all pages)
 apply_style()
+
 # Sidebar branding
 navigation_gif_path = IMAGES_DIR / "chun-li-walking-animation.gif"
 if navigation_gif_path.exists():
@@ -61,13 +63,14 @@ def jeu_surprise_page() -> None:
 
     if st.button("Clique ICI"):
         game_choice = random.choices(
-            ["casse_brique.py", "snake.py", "space_invaders.py"],
+            ["games/casse_brique.py", "games/snake.py", "games/space_invaders.py"],
             weights=[1, 1, 1],
             k=1,
         )[0]
         game_path = str(Path(__file__).parent / game_choice)
         subprocess.Popen(["python", game_path])
-        st.write(f"Le jeu {game_choice.split('.')[0]} se lance dans une nouvelle fenetre.")
+        game_name = game_choice.split("/")[1].split(".")[0]
+        st.write(f"Le jeu {game_name} se lance dans une nouvelle fenetre.")
 
 
 # Native multi-page navigation (Streamlit 1.36+)

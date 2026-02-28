@@ -1,8 +1,9 @@
-"""Tests for the prediction pipeline (source/prediction.py)."""
+"""Tests for the prediction pipeline (source/ml/predict.py)."""
 
 import pandas as pd
 import pytest
-from prediction import _lookup_cumulative, get_features
+from ml.predict import get_features
+from ml.predict import lookup_cumulative as _lookup_cumulative
 
 
 # ---------------------------------------------------------------------------
