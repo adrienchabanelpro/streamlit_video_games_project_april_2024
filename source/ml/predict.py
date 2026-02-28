@@ -4,16 +4,21 @@ This module is Streamlit-agnostic. Caching decorators are applied in the page
 layer (``pages/prediction.py``) via thin wrappers.
 """
 
+from __future__ import annotations
+
 import json
 import warnings
+from typing import TYPE_CHECKING
 
-import catboost as cb
 import joblib
-import lightgbm as lgb
 import numpy as np
 import pandas as pd
-import xgboost as xgb
 from config import MODELS_DIR, REPORTS_DIR
+
+if TYPE_CHECKING:
+    import catboost as cb
+    import lightgbm as lgb
+    import xgboost as xgb
 
 warnings.simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 
@@ -34,6 +39,10 @@ NUMERICAL_FEATURES: list[str] = [
 
 def load_models() -> tuple[lgb.Booster, xgb.XGBRegressor, cb.CatBoostRegressor]:
     """Load all 3 ensemble models (LightGBM, XGBoost, CatBoost)."""
+    import catboost as cb
+    import lightgbm as lgb
+    import xgboost as xgb
+
     lgb_model = lgb.Booster(model_file=str(REPORTS_DIR / "model_v2_optuna.txt"))
     xgb_model = xgb.XGBRegressor()
     xgb_model.load_model(str(MODELS_DIR / "model_v2_xgboost.json"))

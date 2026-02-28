@@ -2,7 +2,13 @@
 
 import pandas as pd
 import streamlit as st
-from transformers import pipeline
+
+try:
+    from transformers import pipeline
+
+    _HAS_TRANSFORMERS = True
+except ImportError:
+    _HAS_TRANSFORMERS = False
 
 _BINARY_MODEL = "distilbert-base-uncased-finetuned-sst-2-english"
 _STAR_MODEL = "nlptown/bert-base-multilingual-uncased-sentiment"
@@ -98,6 +104,11 @@ GAMING_ASPECTS: dict[str, list[str]] = {
 }
 
 
+def has_transformers() -> bool:
+    """Return whether the transformers library is available."""
+    return _HAS_TRANSFORMERS
+
+
 @st.cache_resource
 def _load_binary_pipeline() -> object:
     """Load the DistilBERT binary sentiment pipeline (cached)."""
@@ -137,6 +148,13 @@ def predict_user_reviews(
         For 5-star mode, positive_pct is the average star rating and
         negative_pct is None.
     """
+    if not _HAS_TRANSFORMERS:
+        st.warning(
+            "La bibliotheque `transformers` n'est pas installee. "
+            "L'analyse de sentiment n'est pas disponible dans cet environnement."
+        )
+        return None, None, None
+
     if uploaded_file is None:
         return None, None, None
 
@@ -206,6 +224,13 @@ def analyze_aspects(reviews: list[str]) -> dict[str, dict[str, int]]:
     Returns:
         Dict mapping aspect name to {"positive": count, "negative": count}.
     """
+    if not _HAS_TRANSFORMERS:
+        st.warning(
+            "La bibliotheque `transformers` n'est pas installee. "
+            "L'analyse par aspect n'est pas disponible dans cet environnement."
+        )
+        return {}
+
     classifier = _load_binary_pipeline()
     aspect_results: dict[str, dict[str, int]] = {}
 

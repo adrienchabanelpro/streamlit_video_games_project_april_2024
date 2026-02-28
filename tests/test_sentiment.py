@@ -4,6 +4,9 @@ import io
 
 import pandas as pd
 import pytest
+
+pytest.importorskip("transformers")
+
 from analyse_avis_utilisateurs import predict_user_reviews
 
 

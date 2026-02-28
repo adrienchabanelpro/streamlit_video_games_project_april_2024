@@ -1,6 +1,5 @@
 import json
 
-import lightgbm as lgb
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -13,6 +12,7 @@ from sklearn.model_selection import train_test_split
 
 def modelisation_page() -> None:
     """Render the LightGBM model presentation and interactive demo page."""
+    import lightgbm as lgb
 
     # Titre de la présentation
     st.title("🚀 Présentation du Modèle LightGBM")

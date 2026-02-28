@@ -5,13 +5,23 @@ from io import BytesIO
 
 import plotly.graph_objects as go
 import streamlit as st
-from analyse_avis_utilisateurs import analyze_aspects, predict_user_reviews
+from analyse_avis_utilisateurs import analyze_aspects, has_transformers, predict_user_reviews
 from config import BG, CYAN, IMAGES_DIR, PINK, PLOTLY_LAYOUT, TEXT_COLOR
 from PIL import Image
 
 
 def perception_page() -> None:
     """Render the user perception / sentiment analysis page."""
+    if not has_transformers():
+        st.title("Perception")
+        st.info(
+            "L'analyse de sentiment necessite la bibliotheque `transformers` "
+            "(et PyTorch), qui n'est pas disponible dans cet environnement cloud. "
+            "Pour utiliser cette fonctionnalite, lancez l'application en local avec :\n\n"
+            "```\npip install -r requirements-dev.txt\nstreamlit run source/main.py\n```"
+        )
+        return
+
     st.title("Perception")
     st.write(
         "Analysez le sentiment de vos utilisateurs avec nos modeles de NLP. "
