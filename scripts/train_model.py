@@ -34,6 +34,7 @@ import category_encoders as ce
 import joblib
 import lightgbm as lgb
 import matplotlib
+import mlflow
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -699,6 +700,36 @@ def main() -> None:
         all_params,
         all_metrics,
     )
+
+    # ---- MLflow logging ----
+    logger.info("\nLogging to MLflow...")
+    mlflow.set_experiment("video-game-sales-prediction")
+    with mlflow.start_run(run_name=f"ensemble_{datetime.now():%Y%m%d_%H%M%S}"):
+        # Log parameters
+        mlflow.log_param("split_year", best_split_year)
+        mlflow.log_param("log_transform", LOG_TRANSFORM)
+        mlflow.log_param("random_state", RANDOM_STATE)
+        mlflow.log_param("train_size", len(df_train))
+        mlflow.log_param("test_size", len(df_test))
+        for model_name, params in all_params.items():
+            for k, v in params.items():
+                if k != "split_year":
+                    mlflow.log_param(f"{model_name}__{k}", v)
+
+        # Log metrics
+        for model_name, metrics in all_metrics.items():
+            for metric_key, metric_val in metrics.items():
+                mlflow.log_metric(f"{model_name}__{metric_key}", metric_val)
+
+        # Log artifacts
+        mlflow.log_artifact(str(REPORTS_DIR / "model_v2_optuna.txt"))
+        mlflow.log_artifact(str(MODELS_DIR / "model_v2_xgboost.json"))
+        mlflow.log_artifact(str(MODELS_DIR / "model_v2_catboost.cbm"))
+        mlflow.log_artifact(str(REPORTS_DIR / "training_log.json"))
+        mlflow.log_artifact(str(REPORTS_DIR / "shap_summary.png"))
+        mlflow.log_artifact(str(REPORTS_DIR / "shap_bar.png"))
+
+    logger.info("  MLflow run logged successfully")
 
     logger.info("\n" + "=" * 60)
     logger.info("Training complete! (3 models + ensemble)")

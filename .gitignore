@@ -27,3 +27,5 @@ Thumbs.db
 .claude/projects/
 .claude/settings.local.json
 catboost_info/
+mlruns/
+mlartifacts/

@@ -21,6 +21,7 @@ catboost
 transformers
 torch
 wordcloud
+mlflow
 pandera
 dvc
 pytest
