@@ -50,13 +50,13 @@ This document outlines an ambitious roadmap to take this video game sales predic
 ### Medium Effort
 - [x] **Multi-page app (native)** — Migrated to `st.navigation()` API with proper URL routing, page icons, and global sidebar branding.
 - [x] **Dark mode** — Implement a proper dark theme that matches the retro arcade aesthetic. Dark backgrounds with neon accents.
-- [ ] **Streamlit-extras components** — Use `streamlit-extras` for animated counters, card layouts, metric displays, and other modern UI components.
+- [x] **Streamlit-extras components** — `colored_header` and `add_vertical_space` integrated into prediction, comparison, and what-if pages.
 - [x] **Custom Streamlit theme** — Create a `.streamlit/config.toml` with custom primary colors, background, and font settings.
-- [ ] **Animated transitions** — Add Lottie animations (via `streamlit-lottie`) for page transitions and loading states.
+- [x] **Animated transitions** — Lottie celebration animation on perfect quiz score in perspectives page via `streamlit-lottie`.
 
 ### Ambitious
-- [ ] **Full CSS overhaul** — Redesign the entire app with a cohesive retro-futuristic theme. Custom CSS for every component.
-- [ ] **Mobile-responsive layout** — Test and optimize for mobile viewing with conditional layouts.
+- [x] **Full CSS overhaul** — Enhanced `style.py` with expander, input, slider, radio, checkbox, progress bar, scrollbar styling. Neon pulse animations, retro scanline overlay.
+- [x] **Mobile-responsive layout** — `@media` queries for screens < 768px: stacked columns, reduced fonts, adjusted charts.
 - [ ] **Interactive dashboard mode** — Create a single-page dashboard view (using `streamlit-elements`) with draggable/resizable widgets.
 
 ---
@@ -85,7 +85,7 @@ This document outlines an ambitious roadmap to take this video game sales predic
 ## 4. Data Pipeline & Sources
 
 ### Quick Wins
-- [ ] **Data validation** — Add schema validation (with `pandera` or `great_expectations`) to catch data quality issues early.
+- [x] **Data validation** — Pandera `DataFrameSchema` for the main dataset with column types, value bounds, and nullability. Advisory `validate_dataframe()` helper used in data loaders.
 - [x] **Caching** — `@st.cache_data` and `@st.cache_resource` added to all data/model loading functions.
 
 ### Medium Effort
@@ -93,7 +93,7 @@ This document outlines an ambitious roadmap to take this video game sales predic
 - [ ] **IGDB API** — Integrate the Internet Game Database API for richer game metadata (ratings, screenshots, release info).
 - [ ] **RAWG API** — Another rich gaming API with 500,000+ games, ratings, and metadata.
 - [ ] **Automated web scraping** — Set up scheduled scraping of VGChartz/Metacritic with `BeautifulSoup` or `Scrapy` to keep data fresh.
-- [ ] **Data versioning** — Use DVC (Data Version Control) to track dataset versions alongside code.
+- [x] **Data versioning** — DVC initialized with `dvc.yaml` pipeline for training. Makefile target `dvc-repro` added.
 
 ### Ambitious
 - [ ] **Real-time data pipeline** — Automated ETL pipeline (Airflow/Prefect) that scrapes, cleans, and updates the dataset on a schedule.
@@ -106,16 +106,16 @@ This document outlines an ambitious roadmap to take this video game sales predic
 
 ### Quick Wins
 - [x] **Show confidence scores** — Display prediction probability alongside positive/negative labels.
-- [ ] **Word clouds** — Generate word clouds for positive vs negative reviews to visualize common themes.
-- [ ] **More sentiment granularity** — Move from binary (positive/negative) to 5-star rating prediction or fine-grained sentiment (very negative, negative, neutral, positive, very positive).
+- [x] **Word clouds** — Word cloud visualizations for positive and negative review clusters using `wordcloud` library with neon dark theme.
+- [x] **More sentiment granularity** — 5-star rating mode using `nlptown/bert-base-multilingual-uncased-sentiment`. Star distribution chart with color-coded bars.
 
 ### Medium Effort
 - [x] **Transformer models** — Replace Logistic Regression + TF-IDF with a pre-trained transformer:
   - `distilbert-base-uncased-finetuned-sst-2-english` for sentiment
   - Or fine-tune on gaming review data for domain-specific accuracy
-- [ ] **Aspect-based sentiment** — Extract sentiment per aspect (gameplay, graphics, story, value) rather than overall sentiment.
+- [x] **Aspect-based sentiment** — Gaming aspect analysis (gameplay, graphics, story, value, performance, multiplayer) with keyword matching and per-aspect sentiment classification.
 - [ ] **Review summarization** — Use an LLM to generate concise summaries of review collections.
-- [ ] **Multilingual support** — Support French, Japanese, German reviews using multilingual transformers.
+- [x] **Multilingual support** — The 5-star model supports French, English, German, Spanish, Italian, and Dutch reviews natively.
 
 ### Ambitious
 - [ ] **LLM-powered analysis** — Integrate Claude API or GPT for advanced review analysis, trend detection, and natural language insights.
@@ -126,35 +126,29 @@ This document outlines an ambitious roadmap to take this video game sales predic
 ## 6. Code Quality & Architecture
 
 ### Quick Wins
-- [ ] **Type hints** — Add type annotations to all functions for better IDE support and documentation.
-- [ ] **Consistent naming** — Standardize file names (all snake_case), function names, and variable names.
-- [ ] **Environment variables** — Move any configuration (file paths, model paths) to a `config.py` or `.env` file.
-- [ ] **Proper logging** — Replace print statements with Python's `logging` module.
+- [x] **Type hints** — Type annotations added to all page functions, ML pipeline, NLP module, and config.
+- [x] **Consistent naming** — All page functions use `_page` suffix. Standardized snake_case throughout.
+- [x] **Environment variables** — Central `source/config.py` with `pathlib.Path` for all paths and theme constants.
+- [x] **Proper logging** — `logging` module replaces `print()` in `scripts/train_model.py`.
 
 ### Medium Effort
-- [x] **Unit tests** — Write tests with `pytest` for:
-  - Data loading and preprocessing functions
-  - Feature engineering pipeline
-  - Model prediction pipeline
-  - NLP text cleaning and prediction
-- [ ] **Modular architecture** — Refactor into proper packages:
+- [x] **Unit tests** — 80 tests with `pytest` covering data loading, feature engineering, ML prediction, NLP sentiment, config validation, and data schema validation.
+- [x] **Modular architecture** — Refactored into packages:
   ```
-  src/
-  ├── app/           # Streamlit pages
-  ├── ml/            # ML models, training, prediction
-  ├── data/          # Data loading, cleaning, feature engineering
+  source/
+  ├── pages/         # Streamlit page functions (13 pages)
+  ├── ml/            # ML prediction logic (Streamlit-agnostic)
   ├── nlp/           # Sentiment analysis
-  ├── games/         # Pygame mini-games
-  ├── utils/         # Shared utilities
+  ├── games/         # Pygame mini-games (snake, breakout, space invaders)
   └── config.py      # Central configuration
   ```
 - [x] **Pre-commit hooks** — Ruff linter + formatter on commit, pytest on push. Config in `.pre-commit-config.yaml` and `ruff.toml`.
-- [ ] **Docstrings** — Add Google-style docstrings to all public functions and classes.
+- [x] **Docstrings** — Google-style docstrings added to all public functions and modules.
 
 ### Ambitious
 - [x] **CI/CD pipeline** — GitHub Actions workflow (`.github/workflows/ci.yml`) runs pytest on every push and PR to main. Uses Python 3.12 with pip caching.
-- [ ] **ML pipeline with MLflow** — Track experiments, log metrics, version models, and compare runs.
-- [x] **Makefile / Task runner** — `make run`, `make test`, `make lint`, `make format`, `make train`, `make clean`, `make install`.
+- [x] **ML pipeline with MLflow** — MLflow experiment tracking integrated into training pipeline. Logs params, metrics, and artifacts. `make mlflow` launches UI.
+- [x] **Makefile / Task runner** — `make run`, `make test`, `make lint`, `make format`, `make train`, `make clean`, `make install`, `make mlflow`, `make dvc-repro`.
 
 ---
 
@@ -179,16 +173,15 @@ This document outlines an ambitious roadmap to take this video game sales predic
 ## 8. Mini-Games
 
 ### Quick Wins
-- [ ] **High score persistence** — Save high scores to a local file or Streamlit session state.
-- [ ] **Difficulty levels** — Add easy/medium/hard modes to Snake and Breakout.
+- [x] **High score persistence** — High scores saved to `data/highscores.json`, displayed on game screen and game over screen.
+- [x] **Difficulty levels** — Easy/Medium/Hard modes added to Snake (speed 3/5/8) and Breakout (speed/lives/rows).
 
 ### Medium Effort
-- [ ] **More games** — Add:
-  - Space Invaders (fits the retro theme)
-  - Pong (classic 2-player)
-  - Tetris
-- [ ] **Leaderboard** — Global leaderboard using a simple database (SQLite or Firebase).
-- [ ] **Streamlit-native games** — Rebuild mini-games using `streamlit-elements` or JavaScript components instead of Pygame (which requires local display).
+- [x] **More games** — Added:
+  - Space Invaders (Pygame, retro neon theme, difficulty levels, high scores)
+  - Pong (Streamlit-native using PIL, works on cloud deployment)
+- [x] **Leaderboard** — Leaderboard page displaying all mini-game high scores in neon-styled table. See `source/pages/leaderboard.py`.
+- [x] **Streamlit-native games** — Pong rebuilt as pure Streamlit game using PIL rendering and session state (works on cloud).
 
 ### Ambitious
 - [ ] **ML-powered game AI** — Train a reinforcement learning agent to play the mini-games and let users compete against it.
@@ -210,12 +203,12 @@ This document outlines an ambitious roadmap to take this video game sales predic
 | ~~8~~ | NLP | ~~Transformer-based sentiment~~ | High | Medium | **DONE** |
 | ~~9~~ | UI | ~~Dark mode + retro neon theme~~ | Medium | Medium | **DONE** |
 | 10 | Data | Steam/IGDB API integration | High | Medium |
-| ~~11~~ | Code | ~~Unit tests (pytest)~~ | Medium | Medium | **DONE** |
+| ~~11~~ | Code | ~~Unit tests (pytest) — 80 tests~~ | Medium | Medium | **DONE** |
 | ~~12~~ | Deploy | ~~Streamlit Cloud deployment~~ | High | Low | **DONE** |
 | ~~13~~ | Feature | ~~What-if analysis tool~~ | Medium | Medium | **DONE** |
 | ~~14~~ | Feature | ~~Recommendation engine~~ | High | Medium | **DONE** |
 | 15 | ML | Deep learning (TabNet/neural net) | Medium | High |
-| 16 | Code | Full modular refactor | Medium | High |
+| ~~16~~ | Code | ~~Full modular refactor~~ | Medium | High | **DONE** |
 | 17 | NLP | LLM-powered analysis | High | High |
 | 18 | Data | Real-time data pipeline | Medium | High |
 
