@@ -1,13 +1,24 @@
 # presentation.py
+"""Presentation page: project overview and dataset display."""
+
 import pandas as pd
 import streamlit as st
 from config import DATA_DIR, IMAGES_DIR
+from data_validation import validate_dataframe
 
 
 @st.cache_data
 def _load_presentation_data() -> pd.DataFrame:
     """Load the main video game sales dataset for the presentation page."""
-    return pd.read_csv(DATA_DIR / "Ventes_jeux_video_final.csv")
+    df = pd.read_csv(DATA_DIR / "Ventes_jeux_video_final.csv")
+    # Advisory validation — warn but continue
+    is_valid, errors = validate_dataframe(df)
+    if not is_valid:
+        st.warning(
+            f"Validation des donnees : {len(errors)} probleme(s) detecte(s). "
+            "Les donnees affichees peuvent contenir des anomalies."
+        )
+    return df
 
 
 def presentation_page() -> None:

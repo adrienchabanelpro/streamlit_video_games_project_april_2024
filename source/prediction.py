@@ -11,6 +11,8 @@ import pandas as pd
 import streamlit as st
 import xgboost as xgb
 from config import IMAGES_DIR, MODELS_DIR, REPORTS_DIR
+from streamlit_extras.add_vertical_space import add_vertical_space
+from streamlit_extras.colored_header import colored_header
 
 warnings.simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 
@@ -216,7 +218,12 @@ def predict_single(
 
 
 def prediction_page() -> None:
-    st.title("Prediction des ventes de jeux video")
+    colored_header(
+        label="Prediction des ventes de jeux video",
+        description="Estimez les ventes mondiales d'un jeu video a l'aide de notre ensemble de modeles",
+        color_name="light-blue-70",
+    )
+    add_vertical_space(1)
 
     try:
         lgb_model, xgb_model, cb_model = load_models()

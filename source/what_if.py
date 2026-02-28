@@ -11,13 +11,19 @@ from prediction import (
     load_target_encoder,
     predict_single,
 )
+from streamlit_extras.add_vertical_space import add_vertical_space
+from streamlit_extras.colored_header import colored_header
 
 
 def what_if_page() -> None:
     """What-if analysis page: sweep one variable and see impact on predictions."""
-    st.title("Analyse What-If")
+    colored_header(
+        label="Analyse What-If",
+        description="Explorez comment chaque variable influence les predictions de ventes",
+        color_name="light-blue-70",
+    )
+    add_vertical_space(1)
     st.write(
-        "Explorez comment chaque variable influence les predictions de ventes. "
         "Selectionnez une configuration de base, puis choisissez une variable "
         "a faire varier pour observer son impact en temps reel."
     )
@@ -158,6 +164,7 @@ def what_if_page() -> None:
         )
 
         st.plotly_chart(fig, use_container_width=True)
+        add_vertical_space(1)
 
         # --- Summary stats ---
         col_min, col_max, col_range = st.columns(3)

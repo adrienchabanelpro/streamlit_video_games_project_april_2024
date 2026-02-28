@@ -5,12 +5,20 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from config import CYAN, DATA_DIR, PINK, PLOTLY_LAYOUT, PURPLE, YELLOW
+from data_validation import validate_dataframe
 
 
 @st.cache_data
 def _load_dataviz_data() -> pd.DataFrame:
     """Load and prepare the main dataset for visualization."""
     df = pd.read_csv(DATA_DIR / "Ventes_jeux_video_final.csv")
+    # Advisory validation — warn but continue
+    is_valid, errors = validate_dataframe(df)
+    if not is_valid:
+        st.warning(
+            f"Validation des donnees : {len(errors)} probleme(s) detecte(s). "
+            "Les visualisations peuvent etre affectees."
+        )
     df = df.dropna(axis=0)
     df["Year"] = df["Year"].astype(str)
     df["Year"] = df["Year"].str[:-2]

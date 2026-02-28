@@ -11,6 +11,8 @@ from prediction import (
     load_target_encoder,
     predict_single,
 )
+from streamlit_extras.add_vertical_space import add_vertical_space
+from streamlit_extras.colored_header import colored_header
 
 # ---------------------------------------------------------------------------
 # Input widget helpers
@@ -284,7 +286,12 @@ def _render_summary_card(
 
 def comparison_page() -> None:
     """Game comparison page: side-by-side prediction of two game configurations."""
-    st.title("Comparaison de jeux")
+    colored_header(
+        label="Comparaison de jeux",
+        description="Comparez les ventes predites de deux configurations de jeux cote a cote",
+        color_name="light-blue-70",
+    )
+    add_vertical_space(1)
     st.write(
         "Configurez deux jeux hypothetiques et comparez leurs ventes predites "
         "cote a cote. Ajustez les parametres de chaque jeu pour explorer "

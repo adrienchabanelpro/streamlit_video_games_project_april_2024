@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from config import DATA_DIR
+from data_validation import validate_dataframe
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import StandardScaler
 
@@ -12,6 +13,13 @@ from sklearn.preprocessing import StandardScaler
 def _load_games_data() -> pd.DataFrame:
     """Load and prepare games dataset for similarity computation."""
     df = pd.read_csv(DATA_DIR / "Ventes_jeux_video_final.csv")
+    # Advisory validation — warn but continue
+    is_valid, errors = validate_dataframe(df)
+    if not is_valid:
+        st.warning(
+            f"Validation des donnees : {len(errors)} probleme(s) detecte(s). "
+            "Les recommandations peuvent etre affectees."
+        )
     df = df.dropna(subset=["Name", "Genre", "Platform", "Publisher", "Year"])
     df["Year"] = df["Year"].astype(int)
     df["meta_score"] = df["meta_score"].fillna(df["meta_score"].median())

@@ -1,6 +1,23 @@
+import requests
 import streamlit as st
 from config import IMAGES_DIR
+from lottie_urls import LOTTIE_URLS
 from PIL import Image
+from streamlit_lottie import st_lottie
+
+
+def _load_lottie_url(url: str) -> dict | None:
+    """Fetch a Lottie animation JSON from *url*.
+
+    Returns the parsed JSON dict on success, or ``None`` if the request fails.
+    """
+    try:
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            return response.json()
+    except requests.RequestException:
+        pass
+    return None
 
 
 def perspectives_page() -> None:
@@ -96,6 +113,12 @@ def perspectives_page() -> None:
         if score == len(quiz_questions):
             st.balloons()
             st.write("Félicitations ! Vous avez tout juste.")
+
+            # Lottie celebration animation for perfect score
+            celebration_anim = _load_lottie_url(LOTTIE_URLS["celebration"])
+            if celebration_anim is not None:
+                st_lottie(celebration_anim, height=250, key="quiz_celebration")
+
             youwin_path = IMAGES_DIR / "youwin.png"
             if youwin_path.exists():
                 image = Image.open(youwin_path)

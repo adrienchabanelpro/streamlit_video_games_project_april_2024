@@ -20,6 +20,11 @@ xgboost
 catboost
 transformers
 torch
+wordcloud
+pandera
+dvc
 pytest
 ruff
 pre-commit
+streamlit-extras
+streamlit-lottie

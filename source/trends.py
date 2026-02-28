@@ -4,12 +4,20 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 from config import DATA_DIR, PLOTLY_LAYOUT
+from data_validation import validate_dataframe
 
 
 @st.cache_data
 def _load_data() -> pd.DataFrame:
     """Load and prepare the main dataset for trend analysis."""
     df = pd.read_csv(DATA_DIR / "Ventes_jeux_video_final.csv")
+    # Advisory validation — warn but continue
+    is_valid, errors = validate_dataframe(df)
+    if not is_valid:
+        st.warning(
+            f"Validation des donnees : {len(errors)} probleme(s) detecte(s). "
+            "Les tendances peuvent etre affectees."
+        )
     df = df.dropna(subset=["Year", "Publisher", "Genre", "Platform"])
     df["Year"] = df["Year"].astype(str).str[:-2].astype(int)
     return df

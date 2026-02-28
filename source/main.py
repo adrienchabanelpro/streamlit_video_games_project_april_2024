@@ -9,10 +9,12 @@ from comparison import comparison_page
 from config import IMAGES_DIR
 from dataviz import dataviz_page
 from feature_engineering import feature_engineering_page
+from leaderboard import leaderboard_page
 from methodologie import methodologie_page
 from modelisation import modelisation_page
 from perception import perception_page
 from perspectives import perspectives_page
+from pong_streamlit import pong_page
 from prediction import prediction_page
 from presentation import presentation_page
 from recommendation import recommendation_page
@@ -58,7 +60,11 @@ def jeu_surprise_page() -> None:
         return
 
     if st.button("Clique ICI"):
-        game_choice = random.choices(["casse_brique.py", "snake.py"], weights=[1, 1], k=1)[0]
+        game_choice = random.choices(
+            ["casse_brique.py", "snake.py", "space_invaders.py"],
+            weights=[1, 1, 1],
+            k=1,
+        )[0]
         game_path = str(Path(__file__).parent / game_choice)
         subprocess.Popen(["python", game_path])
         st.write(f"Le jeu {game_choice.split('.')[0]} se lance dans une nouvelle fenetre.")
@@ -80,6 +86,8 @@ pg = st.navigation(
         st.Page(perception_page, title="Perception", icon="💬"),
         st.Page(perspectives_page, title="Perspectives", icon="🔭"),
         st.Page(jeu_surprise_page, title="Jeu Surprise", icon="🎮"),
+        st.Page(pong_page, title="Pong", icon="🏓"),
+        st.Page(leaderboard_page, title="Classement", icon="🏆"),
     ]
 )
 
