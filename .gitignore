@@ -29,3 +29,6 @@ Thumbs.db
 catboost_info/
 mlruns/
 mlartifacts/
+
+# Raw data downloads (large, re-downloadable)
+data/raw/

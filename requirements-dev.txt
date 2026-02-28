@@ -9,3 +9,6 @@ pytest
 ruff
 pre-commit
 dvc
+kagglehub
+steamspypi
+rapidfuzz
