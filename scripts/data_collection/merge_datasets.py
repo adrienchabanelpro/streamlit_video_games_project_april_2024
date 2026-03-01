@@ -187,34 +187,35 @@ def _fuzzy_merge(
 
     print(f"[merge] Phase 1 (exact): {exact_count:,} matches")
 
-    # Phase 2: Fuzzy matches for remaining rows
+    # Phase 2: Fuzzy matches for remaining rows using optimized extractOne
     if unmatched_indices:
+        from rapidfuzz import process
+
         steam_names = list(steam_lookup.keys())
         steam_indices = list(steam_lookup.values())
+        # Build name→steam_idx mapping for O(1) lookup after fuzzy match
+        name_to_steam_idx = dict(zip(steam_names, steam_indices))
         fuzzy_count = 0
         total_unmatched = len(unmatched_indices)
 
-        for i, vg_idx in enumerate(unmatched_indices):
-            if (i + 1) % 5000 == 0:
+        # Collect all unmatched names for batch-style processing
+        unmatched_names = [vg.at[idx, "_norm_name"] for idx in unmatched_indices]
+
+        print(f"[merge] Phase 2 (fuzzy): matching {total_unmatched:,} names...")
+        for i, (vg_idx, vg_norm) in enumerate(zip(unmatched_indices, unmatched_names)):
+            if (i + 1) % 10000 == 0:
                 print(f"[merge] Phase 2 (fuzzy): {i + 1:,}/{total_unmatched:,}...")
 
-            vg_norm = vg.at[vg_idx, "_norm_name"]
             if not vg_norm:
                 continue
 
-            best_score = 0
-            best_steam_idx = None
-
-            for s_name, s_idx in zip(steam_names, steam_indices):
-                score = fuzz.WRatio(vg_norm, s_name)
-                if score > best_score:
-                    best_score = score
-                    best_steam_idx = s_idx
-                    if score == 100:
-                        break
-
-            if best_score >= threshold and best_steam_idx is not None:
-                _copy_steam_cols(vg, vg_idx, steam, best_steam_idx, score=best_score)
+            result = process.extractOne(
+                vg_norm, steam_names, scorer=fuzz.WRatio, score_cutoff=threshold
+            )
+            if result is not None:
+                match_name, score, _ = result
+                steam_idx = name_to_steam_idx[match_name]
+                _copy_steam_cols(vg, vg_idx, steam, steam_idx, score=int(score))
                 fuzzy_count += 1
 
         print(f"[merge] Phase 2 (fuzzy): {fuzzy_count:,} matches (threshold={threshold})")
