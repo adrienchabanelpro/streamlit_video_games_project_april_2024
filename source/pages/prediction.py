@@ -17,7 +17,7 @@ def _get_input(train_stats: dict) -> tuple[str, str, str, dict]:
     publisher_input = st.sidebar.selectbox("Selectionnez l'editeur", train_stats["publishers"])
     genre_input = st.sidebar.selectbox("Selectionnez le genre", train_stats["genres"])
     platform_input = st.sidebar.selectbox("Selectionnez la plateforme", train_stats["platforms"])
-    years = list(range(1980, 2031))
+    years = list(range(1970, 2031))
     year_input = st.sidebar.selectbox("Selectionnez l'annee", years, index=years.index(2024))
     input_data["Year"] = year_input
 

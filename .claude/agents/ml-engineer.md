@@ -6,10 +6,12 @@ Specialized agent for model training, evaluation, and optimization.
 Train, evaluate, and improve ML models for video game sales prediction and sentiment analysis.
 
 ## Context
-- Current sales model: LightGBM (R²=0.988, 500 trees, 576 features)
-- Current sentiment model: Logistic Regression + TF-IDF
-- Model files: `reports/model_final.txt`, `models/*.pkl`, `models/*.joblib`
-- Training data: `data/df_features.csv`, `data/df_topfeats.csv`
+- Current sales model: 3-model ensemble (LightGBM + XGBoost + CatBoost), Optuna-tuned, 10 features, target encoding, temporal split (R²=0.3811 ensemble)
+- Training data: 64,016 rows (VGChartz 2024 + SteamSpy), ~60K+ after cleaning
+- Current sentiment model: DistilBERT (primary) + Logistic Regression + TF-IDF (fallback)
+- Model files: `reports/model_v2_optuna.txt`, `models/model_v2_xgboost.json`, `models/model_v2_catboost.cbm`
+- Transformers: `models/scaler_v2.joblib`, `models/target_encoder_v2.joblib`, `models/feature_means_v2.joblib`
+- Training log: `reports/training_log.json`
 
 ## Capabilities
 - Train and evaluate ML models (LightGBM, XGBoost, CatBoost, sklearn)
@@ -21,7 +23,7 @@ Train, evaluate, and improve ML models for video game sales prediction and senti
 ## Instructions
 - Follow rules in `.claude/rules/ml-guidelines.md`
 - Always report: R², MSE, MAE, RMSE
-- Save new models with version suffix (e.g., `model_v2_optuna.txt`)
+- Save new models with version suffix (e.g., `model_v3_optuna.txt`)
 - Never overwrite existing model files without explicit confirmation
 - Use `random_state=42` for reproducibility
 - Document any changes to the feature pipeline

@@ -146,19 +146,17 @@ def modelisation_page() -> None:
     # Conclusion
     st.header("Conclusion 🎯")
     st.write("""
-            LightGBM est un outil puissant pour les tâches de régression et de classification, particulièrement adapté aux grands ensembles de données.
+            LightGBM est un outil puissant pour les taches de regression et de classification,
+            particulierement adapte aux grands ensembles de donnees.
 
-            Score du modèle avant feature engineering :
+            **Modele v1 (16K donnees, fuite de donnees) :**
 
-            LGBMRegressor R² : Moyenne = 0.3107, Écart-type = 0.0151
-            LGBMRegressor MSE : Moyenne = 0.0400, Écart-type = 0.0027
-            LGBMRegressor MAE : Moyenne = 0.1432, Écart-type = 0.0043
+            LGBMRegressor R² : Moyenne = 0.3107 (avant feature engineering)
+            LGBMRegressor R² : Moyenne = 0.9880 (apres feature engineering — score gonfle par la fuite de donnees)
 
-            Score du modèle après feature engineering :
-
-            LGBMRegressor R² : Moyenne = 0.9880, Écart-type = 0.0035
-            LGBMRegressor MSE : Moyenne = 0.0007, Écart-type = 0.0002
-            LGBMRegressor MAE : Moyenne = 0.0132, Écart-type = 0.0013
+            *Note : le modele v1 utilisait les ventes regionales (NA, EU, JP, Other) comme features,
+            ce qui constituait une fuite de donnees car elles composent directement Global_Sales.
+            Les scores v1 ne sont donc pas comparables aux scores v2.*
 """)
 
     # ------------------------------------------------------------------
@@ -230,17 +228,20 @@ def modelisation_page() -> None:
                 use_container_width=True,
                 hide_index=True,
             )
-            st.caption("*v1 avait une fuite de donnees — scores non comparables directement")
+            st.caption(
+                "*v1 : 16K donnees, 576 features, fuite de donnees — "
+                "v2 : 64K donnees, 10 features, split temporel, pas de fuite"
+            )
         else:
             col1, col2 = st.columns(2)
             with col1:
                 st.markdown("**Modele v1 (original)**")
                 st.metric("R2", "0.9880")
-                st.caption("576 features, fuite de donnees")
+                st.caption("16K donnees, 576 features, fuite de donnees")
             with col2:
                 st.markdown("**Modele v2 (Optuna)**")
                 st.metric("R2", f"{metrics_lgb['r2']:.4f}")
-                st.caption("10 features, split temporel")
+                st.caption("64K donnees, 10 features, split temporel")
 
         # Baseline comparison
         baseline_r2 = metrics_lgb.get("baseline_r2", "N/A")

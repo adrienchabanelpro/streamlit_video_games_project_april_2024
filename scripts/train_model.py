@@ -100,6 +100,11 @@ def load_and_clean_data(csv_path: Path) -> pd.DataFrame:
     # Drop non-feature columns
     df = df.drop(columns=["Rank", "Name"], errors="ignore")
 
+    # Drop columns from enriched dataset that are not features
+    extra_cols = ["img", "developer", "release_date", "last_update"]
+    extra_cols += [c for c in df.columns if c.startswith("steam_")]
+    df = df.drop(columns=[c for c in extra_cols if c in df.columns])
+
     # Drop rows with missing target
     df = df.dropna(subset=[TARGET])
 
@@ -232,7 +237,7 @@ def objective(trial: optuna.Trial, df: pd.DataFrame) -> float:
         "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 10.0, log=True),
         "subsample": trial.suggest_float("subsample", 0.5, 1.0),
         "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
-        "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
+        "n_estimators": trial.suggest_int("n_estimators", 100, 500),
     }
 
     # Temporal split
@@ -295,7 +300,7 @@ def objective_xgb(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
         "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 10.0, log=True),
         "subsample": trial.suggest_float("subsample", 0.5, 1.0),
         "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
-        "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
+        "n_estimators": trial.suggest_int("n_estimators", 100, 500),
     }
 
     kf = KFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
@@ -327,7 +332,7 @@ def objective_cb(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
         "depth": trial.suggest_int("depth", 3, 10),
         "l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 1e-8, 10.0, log=True),
         "subsample": trial.suggest_float("subsample", 0.5, 1.0),
-        "iterations": trial.suggest_int("iterations", 100, 1000),
+        "iterations": trial.suggest_int("iterations", 100, 500),
     }
 
     kf = KFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
@@ -620,28 +625,28 @@ def main() -> None:
         y_test = y_test_raw
 
     # ---- 5. Optuna — XGBoost ----
-    logger.info("\n[5/9] Optuna: XGBoost (30 trials)...")
+    logger.info("\n[5/9] Optuna: XGBoost (15 trials)...")
     study_xgb = optuna.create_study(
         direction="maximize",
         sampler=optuna.samplers.TPESampler(seed=RANDOM_STATE + 1),
     )
     study_xgb.optimize(
         lambda trial: objective_xgb(trial, X_train, y_train),
-        n_trials=30,
+        n_trials=15,
         show_progress_bar=True,
     )
     best_xgb_params = study_xgb.best_params
     logger.info(f"  Best CV R2: {study_xgb.best_value:.4f}")
 
     # ---- 6. Optuna — CatBoost ----
-    logger.info("\n[6/9] Optuna: CatBoost (30 trials)...")
+    logger.info("\n[6/9] Optuna: CatBoost (15 trials)...")
     study_cb = optuna.create_study(
         direction="maximize",
         sampler=optuna.samplers.TPESampler(seed=RANDOM_STATE + 2),
     )
     study_cb.optimize(
         lambda trial: objective_cb(trial, X_train, y_train),
-        n_trials=30,
+        n_trials=15,
         show_progress_bar=True,
     )
     best_cb_params = study_cb.best_params

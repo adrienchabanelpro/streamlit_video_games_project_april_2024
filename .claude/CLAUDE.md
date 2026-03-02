@@ -8,34 +8,43 @@
 
 ## Architecture
 
-- `source/main.py` — Entry point, sidebar nav (radio buttons) routing to 9 pages
-- `source/style.py` — CSS injection (orange sidebar, Press Start 2P + Tiny5 fonts, blue #003366 headers)
-- `source/dataviz.py` — 20+ charts (Plotly/Matplotlib)
-- `source/prediction.py` — Loads LightGBM model + transformers, arcade UI
-- `source/perception.py` — NLP sentiment analysis (file upload + gauge)
+- `source/main.py` — Entry point, sidebar nav routing to 15 pages
+- `source/config.py` — Paths, constants, Plotly layout
+- `source/style.py` — CSS injection (neon dark theme, Press Start 2P + Tiny5 fonts)
+- `source/pages/dataviz.py` — 20+ charts (Plotly)
+- `source/pages/prediction.py` — Ensemble prediction UI (arcade theme)
+- `source/pages/perception.py` — NLP sentiment analysis (DistilBERT + LR fallback)
+- `source/ml/predict.py` — Inference pipeline (loads 3 models + transformers)
 - `source/analyse_avis_utilisateurs.py` — `clean_text()`, `predict_user_reviews()`
-- `source/snake.py`, `source/casse_brique.py` — Pygame games
+- `source/games/` — Pygame games (snake, casse_brique, space_invaders)
+- `scripts/train_model.py` — Full training pipeline (ensemble + Optuna)
+- `scripts/data_collection/` — Kaggle + SteamSpy data collection + fuzzy merge
 
 ## Data & Models
 
-- `data/Ventes_jeux_video_final.csv` — Main dataset (16,325 rows)
-- `reports/model_final.txt` — LightGBM (500 trees, 576 features, R²=0.988)
-- `models/logistic_regression_model.pkl` — Sentiment classifier
+- `data/Ventes_jeux_video_final.csv` — Main dataset (64,016 rows, 30 cols: VGChartz 2024 + SteamSpy enrichment)
+- `reports/model_v2_optuna.txt` — LightGBM (Optuna-optimized)
+- `models/model_v2_xgboost.json` — XGBoost (Optuna-optimized)
+- `models/model_v2_catboost.cbm` — CatBoost (Optuna-optimized)
+- `models/scaler_v2.joblib` — StandardScaler
+- `models/target_encoder_v2.joblib` — Publisher target encoder
+- `models/feature_means_v2.joblib` — Training stats (genre/platform means, cumulative sales)
+- `reports/training_log.json` — Training log (params, metrics, timestamp)
+- `models/logistic_regression_model.pkl` — Sentiment classifier (v1)
 - `models/tfidf_vectorizer.pkl` — TF-IDF vectorizer
-- `models/*.joblib` — StandardScaler + OneHotEncoder transformers
 
 ## Key Conventions
 
 - Streamlit CSS via `st.markdown(unsafe_allow_html=True)`
 - Models: `joblib.load()` for sklearn, `lgb.Booster(model_file=...)` for LightGBM
 - Plotly for interactive charts, Matplotlib for static
-- No tests, no caching, no error handling currently
+- `@st.cache_data` for data loading, `@st.cache_resource` for model loading
 - See `IMPROVEMENT.md` for full roadmap
 - See `CLAUDE.md` (root) for detailed technical context
 
 ## Known Critical Issues
 
-1. Possible data leakage (regional sales as features)
-2. OneHotEncoder bloat (576 cols from Publisher)
-3. No `@st.cache_data` / `@st.cache_resource`
+1. ~~Possible data leakage~~ — Fixed in v2 (regional sales excluded, temporal split)
+2. ~~OneHotEncoder bloat~~ — Fixed in v2 (target encoding: 10 features instead of 576)
+3. ~~No caching~~ — Fixed (st.cache_data/st.cache_resource on all loaders)
 4. Pygame games need local display (no cloud support)

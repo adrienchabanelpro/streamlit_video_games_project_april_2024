@@ -29,8 +29,10 @@ def feature_engineering_page() -> None:
     # Définir les sections
     st.header("Dataset Initial")
     st.markdown("""
-    **Taille:** 16 500 entrées et 5 colonnes.  
-    **Colonnes Exclues:** 'Name', 'NA_Sales', 'EU_Sales', 'JP_Sales', 'Other_Sales', 'Rank'.
+    **Taille:** ~64 000 lignes et 30 colonnes (VGChartz 2024 + SteamSpy).
+    **Colonnes exclues pour la prediction :** 'Name', 'Rank', 'NA_Sales', 'EU_Sales',
+    'JP_Sales', 'Other_Sales' (fuite de donnees), 'img', 'developer', 'release_date',
+    'last_update', et toutes les colonnes `steam_*` (non utilisees comme features).
     """)
 
     st.header("Nettoyage")
@@ -44,14 +46,18 @@ def feature_engineering_page() -> None:
 
     st.header("Transformation")
     st.markdown("""
-    - Application du OneHotEncoder sur les variables catégorielles ('Publisher') et sur les autres variables catégorielles.  
-    - Normalisation de toutes les autres colonnes numériques.
+    - **v1 (ancien)** : OneHotEncoder sur Publisher → 576 colonnes creuses.
+    - **v2 (actuel)** : Target Encoding sur Publisher → 1 seule colonne (`Publisher_encoded`),
+      beaucoup plus efficace pour les variables a haute cardinalite.
+    - Normalisation de toutes les colonnes numeriques avec StandardScaler.
     """)
 
     st.header("Normalisation et Encodage")
     st.markdown("""
-    **Objectif:** Préparer les données pour la modélisation en normalisant les colonnes numériques et en encodant les variables catégorielles.  
-    **Résultat:** Après transformation, chaque dataset avait en moyenne entre 14 000 entrées et 17 000 entrées et entre 400 et 600 colonnes.
+    **Objectif :** Preparer les donnees pour la modelisation en normalisant les colonnes
+    numeriques et en encodant les variables categorielles.
+    **Resultat (v2) :** Apres transformation, le dataset d'entrainement contient ~60 000+
+    lignes et seulement **10 features** (grace au target encoding au lieu du one-hot).
     """)
 
     st.header("Analyse en Composantes Principales (PCA)")
@@ -89,23 +95,20 @@ def feature_engineering_page() -> None:
     - Score_Interaction
     """)
 
-    st.header("Dataset Final")
+    st.header("Dataset Final (v2)")
     st.markdown("""
-    **Taille:** 14 500 entrées et 11 colonnes.  
-    **Colonnes:**  
-    - Year  
-    - Publisher  
-    - Global_Sales  
-    - meta_score  
-    - user_review  
-    - Global_Sales_mean_genre  
-    - Global_Sales_mean_platform  
-    - Year_Global_Sales_mean_genre  
-    - Year_Global_Sales_mean_platform  
-    - Cumulative_Sales_Genre  
-    - Cumulative_Sales_Platform  
+    **Taille :** ~60 000+ lignes et **10 features** pour la prediction.
+    **Features utilisees :**
+    - `Year`
+    - `meta_score`, `user_review`
+    - `Publisher_encoded` (target encoding — 1 colonne au lieu de 576)
+    - `Global_Sales_mean_genre`, `Global_Sales_mean_platform`
+    - `Year_Global_Sales_mean_genre`, `Year_Global_Sales_mean_platform`
+    - `Cumulative_Sales_Genre`, `Cumulative_Sales_Platform`
 
-    Après encodage, ce dataset comptait toujours 14 500 entrées mais 576 colonnes.
+    **Cible :** `Global_Sales` (avec transformation log1p).
+    **Split temporel** : entrainement sur les jeux anterieurs a l'annee de split,
+    test sur les jeux posterieurs (pas de fuite de donnees).
     """)
 
     data = _load_feature_data()

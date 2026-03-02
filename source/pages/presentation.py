@@ -40,6 +40,9 @@ def presentation_page() -> None:
         Dans le cadre de notre formation en analyse de données et en vue de développer nos compétences pratiques, nous avons choisi d'explorer et d'analyser les ventes de jeux vidéo.
     """)
 
+    # Charger les données (needed for dynamic stats below)
+    df = _load_presentation_data()
+
     st.header("Définition des Objectifs Principaux")
     st.markdown("""
         Pour ce projet, il faudra estimer les ventes totales d'un jeu vidéo à l'aide d'informations descriptives. Il va alors falloir passer par plusieurs étapes dont :
@@ -52,27 +55,29 @@ def presentation_page() -> None:
     """)
 
     st.markdown("""
-    Voici une description détaillée des jeux de données utilisés :
+    Voici une description detaillee des jeux de donnees utilises :
 
-    ### VGChartz
-    16500 lignes
+    ### VGChartz 2024 (Kaggle)
+    ~64 000 jeux video — ventes physiques mondiales (NA, EU, JP, Other, Global).
 
-    ### Statistiques des Jeux Vidéos
-    62000 lignes
+    ### SteamSpy
+    ~46 000 jeux Steam — estimations de proprietaires, avis positifs/negatifs,
+    temps de jeu moyen et median, prix actuel et initial.
 
-    Initialement, nous avons utilisé les données disponibles sur VGChartz. Cependant, nous avons constaté que certaines informations cruciales manquaient. Pour pallier ce manque, nous avons :
-
-    - **Rescrappé VGChartz** : Pour obtenir une version plus complète et actualisée des données de vente.
-    - **Scrappé Metacritic** : Pour intégrer des données supplémentaires sur les scores des utilisateurs et de la presse.
-
-    ### Metacritic
-    18799 lignes
-
-    ### Volumétrie du Jeu de Données Final
-    Après avoir combiné les données scrappées de VGChartz, Metacritic et le jeu de données supplémentaires, notre DataFrame final nettoyé contient plus de 14 500 entrées (sans outliers) et 16 325 (avec outliers).
+    ### Fusion par correspondance floue (fuzzy matching)
+    Les deux sources ont ete fusionnees par correspondance floue sur les noms de jeux
+    (librairie **rapidfuzz**), avec un seuil de similarite de 85%.
     """)
 
-    # Charger les données
-    df = _load_presentation_data()
-    st.write("Dataset après scrapping")
+    st.markdown(f"""
+    ### Volumetrie du Jeu de Donnees Final
+    Le dataset fusionne contient **{len(df):,} lignes** et **{len(df.columns)} colonnes**,
+    couvrant des jeux de {int(df['Year'].min()) if 'Year' in df.columns and df['Year'].notna().any() else '?'}
+    a {int(df['Year'].max()) if 'Year' in df.columns and df['Year'].notna().any() else '?'}.
+
+    Les 13 colonnes `steam_*` enrichissent les donnees VGChartz avec des metriques
+    de la plateforme Steam (proprietaires, avis, temps de jeu, prix).
+    """)
+
+    st.write("Dataset fusionne (VGChartz + SteamSpy)")
     st.write(df)
