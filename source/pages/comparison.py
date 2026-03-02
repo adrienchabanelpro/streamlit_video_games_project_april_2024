@@ -64,15 +64,15 @@ def _game_inputs(
     meta_score = st.number_input(
         "Score Metacritic",
         min_value=0.0,
-        max_value=100.0,
+        max_value=10.0,
         value=train_stats["meta_score_mean"],
-        format="%.0f",
+        format="%.1f",
         key=f"{column_key}_meta",
     )
     user_review = st.number_input(
         "Score utilisateur",
         min_value=0.0,
-        max_value=100.0,
+        max_value=10.0,
         value=train_stats["user_review_mean"],
         format="%.1f",
         key=f"{column_key}_user",
@@ -154,8 +154,8 @@ def _build_radar_chart(
 ) -> go.Figure:
     """Create a radar chart comparing feature values of both game configurations.
 
-    Axes: Annee (normalized 1980-2030), Metacritic (0-100), Score utilisateur (0-100),
-    Ventes predites (normalized to max of both).
+    Axes: Annee (normalized 1980-2030), Metacritic (0-10 → 0-100), Score utilisateur
+    (0-10 → 0-100), Ventes predites (normalized to max of both).
     """
     # Normalize Year to 0-100 scale for visual consistency
     year_min, year_max = 1980, 2030
@@ -167,6 +167,12 @@ def _build_radar_chart(
     pred_a_norm = pred_a / max_pred * 100
     pred_b_norm = pred_b / max_pred * 100
 
+    # Scale scores from 0-10 to 0-100 for radar visual consistency
+    meta_a_norm = cfg_a["meta_score"] * 10
+    meta_b_norm = cfg_b["meta_score"] * 10
+    user_a_norm = cfg_a["user_review"] * 10
+    user_b_norm = cfg_b["user_review"] * 10
+
     categories = [
         "Annee",
         "Score Metacritic",
@@ -174,8 +180,8 @@ def _build_radar_chart(
         "Ventes predites",
     ]
 
-    values_a = [year_a_norm, cfg_a["meta_score"], cfg_a["user_review"], pred_a_norm]
-    values_b = [year_b_norm, cfg_b["meta_score"], cfg_b["user_review"], pred_b_norm]
+    values_a = [year_a_norm, meta_a_norm, user_a_norm, pred_a_norm]
+    values_b = [year_b_norm, meta_b_norm, user_b_norm, pred_b_norm]
 
     # Close the polygon
     categories_closed = categories + [categories[0]]

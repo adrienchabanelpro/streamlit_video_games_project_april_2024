@@ -54,15 +54,15 @@ def what_if_page() -> None:
         base_meta = st.number_input(
             "Score Metacritic (base)",
             min_value=0.0,
-            max_value=100.0,
+            max_value=10.0,
             value=train_stats["meta_score_mean"],
-            format="%.0f",
+            format="%.1f",
         )
     with col4:
         base_user = st.number_input(
             "Score utilisateur (base)",
             min_value=0.0,
-            max_value=100.0,
+            max_value=10.0,
             value=train_stats["user_review_mean"],
             format="%.1f",
         )
@@ -77,10 +77,10 @@ def what_if_page() -> None:
     )
 
     if sweep_var == "meta_score":
-        sweep_range = np.linspace(0, 100, 50)
+        sweep_range = np.linspace(0, 10, 50)
         x_label = "Score Metacritic"
     elif sweep_var == "user_review":
-        sweep_range = np.linspace(0, 100, 50)
+        sweep_range = np.linspace(0, 10, 50)
         x_label = "Score utilisateur"
     else:  # Year
         sweep_range = np.arange(1990, 2026)

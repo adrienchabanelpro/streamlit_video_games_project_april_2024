@@ -24,16 +24,16 @@ def _get_input(train_stats: dict) -> tuple[str, str, str, dict]:
     meta_input = st.sidebar.number_input(
         "Selectionnez le score Metacritic",
         min_value=0.0,
-        max_value=100.0,
+        max_value=10.0,
         value=train_stats["meta_score_mean"],
-        format="%.0f",
+        format="%.1f",
     )
     input_data["meta_score"] = meta_input
 
     user_input = st.sidebar.number_input(
         "Selectionnez le score utilisateur",
         min_value=0.0,
-        max_value=100.0,
+        max_value=10.0,
         value=train_stats["user_review_mean"],
         format="%.1f",
     )
