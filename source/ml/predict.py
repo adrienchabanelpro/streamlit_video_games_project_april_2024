@@ -174,10 +174,10 @@ def predict_single(
     df[NUMERICAL_FEATURES] = scaler.transform(df[NUMERICAL_FEATURES])
 
     X = df[NUMERICAL_FEATURES]
-    pred_lgb = lgb_model.predict(X)
-    pred_xgb = xgb_model.predict(X.values)
-    pred_cb = cb_model.predict(X.values)
-    result = float((pred_lgb + pred_xgb + pred_cb) / 3)
+    pred_lgb = np.atleast_1d(lgb_model.predict(X))
+    pred_xgb = np.atleast_1d(xgb_model.predict(X.values))
+    pred_cb = np.atleast_1d(cb_model.predict(X.values))
+    result = float(((pred_lgb + pred_xgb + pred_cb) / 3)[0])
     if is_log_transformed():
         result = float(np.expm1(result))
     return result

@@ -19,7 +19,7 @@ Ce projet combine l'analyse de donnees, le machine learning et des mini-jeux int
 
 ## Fonctionnalites
 
-L'application comporte **15 pages interactives** :
+L'application comporte **12 pages interactives** :
 
 | Page | Description |
 |------|-------------|
@@ -35,9 +35,6 @@ L'application comporte **15 pages interactives** :
 | **Tendances** | Exploration des tendances par genre, plateforme, editeur dans le temps |
 | **Perception** | Analyse de sentiment NLP sur les avis utilisateurs (DistilBERT + Logistic Regression) |
 | **Perspectives** | Axes d'amelioration, quiz interactif, formulaire de feedback |
-| **Jeu Surprise** | Mini-jeu aleatoire : Snake, Casse-Brique ou Space Invaders (Pygame) |
-| **Pong** | Jeu Pong jouable directement dans le navigateur (Streamlit) |
-| **Classement** | Classement des meilleurs scores des mini-jeux |
 
 ## Sources de Donnees
 
@@ -57,7 +54,6 @@ L'application comporte **15 pages interactives** :
 | **NLP** | DistilBERT (Transformers/HuggingFace), Logistic Regression, TF-IDF, NLTK |
 | **Visualisation** | Plotly, Matplotlib, Seaborn, SHAP |
 | **Data Collection** | kagglehub, steamspypi, rapidfuzz |
-| **Jeux** | Pygame |
 | **Code Quality** | ruff, pre-commit, pytest, GitHub Actions CI |
 | **Deploiement** | Docker, Streamlit Cloud |
 | **Autres** | Pillow, Requests, Statsmodels, MLflow |
@@ -110,7 +106,7 @@ Un Dev Container est configure pour VS Code (Python 3.11, Debian Bullseye). Il i
 ```
 streamlit_video_games_project_april_2024/
 ├── source/
-│   ├── main.py                          # Point d'entree, navigation (15 pages)
+│   ├── main.py                          # Point d'entree, navigation (12 pages)
 │   ├── config.py                        # Chemins, constantes, layout Plotly
 │   ├── style.py                         # CSS personnalise (theme retro neon)
 │   ├── prediction.py                    # Wrapper de chargement modeles (cache)
@@ -201,4 +197,4 @@ streamlit_video_games_project_april_2024/
 streamlit run source/main.py
 ```
 
-L'application s'ouvre dans le navigateur avec une sidebar de navigation permettant d'acceder aux 15 pages.
+L'application s'ouvre dans le navigateur avec une sidebar de navigation permettant d'acceder aux 12 pages.

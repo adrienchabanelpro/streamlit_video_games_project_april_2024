@@ -1,10 +1,6 @@
 """Main entry point: multi-page Streamlit app with retro neon theme."""
 
 import importlib
-import os
-import random
-import subprocess
-from pathlib import Path
 
 import streamlit as st
 from config import IMAGES_DIR
@@ -41,41 +37,6 @@ def _lazy(module: str, func: str):
     return page
 
 
-def _has_display() -> bool:
-    """Check if a graphical display is available (False on cloud)."""
-    return bool(
-        os.environ.get("DISPLAY")
-        or os.environ.get("WAYLAND_DISPLAY")
-        or os.name == "nt"  # Windows
-        or ("darwin" in os.uname().sysname.lower())
-    )  # macOS
-
-
-def jeu_surprise_page() -> None:
-    """Jeu Surprise page -- launches a random pygame game."""
-    st.title("THE GAME!!")
-    st.write("Es-tu pret a donner le meilleur de toi meme?")
-
-    if not _has_display():
-        st.warning(
-            "Les mini-jeux Pygame necessitent un affichage graphique local. "
-            "Ils ne sont pas disponibles dans le deploiement cloud. "
-            "Clonez le projet et lancez-le localement pour y jouer!"
-        )
-        return
-
-    if st.button("Clique ICI"):
-        game_choice = random.choices(
-            ["games/casse_brique.py", "games/snake.py", "games/space_invaders.py"],
-            weights=[1, 1, 1],
-            k=1,
-        )[0]
-        game_path = str(Path(__file__).parent / game_choice)
-        subprocess.Popen(["python", game_path])
-        game_name = game_choice.split("/")[1].split(".")[0]
-        st.write(f"Le jeu {game_name} se lance dans une nouvelle fenetre.")
-
-
 # Native multi-page navigation (Streamlit 1.36+)
 pg = st.navigation(
     [
@@ -91,9 +52,6 @@ pg = st.navigation(
         st.Page(_lazy("pages.trends", "trends_page"), title="Tendances", icon="📈"),
         st.Page(_lazy("pages.perception", "perception_page"), title="Perception", icon="💬"),
         st.Page(_lazy("pages.perspectives", "perspectives_page"), title="Perspectives", icon="🔭"),
-        st.Page(jeu_surprise_page, title="Jeu Surprise", icon="🎮"),
-        st.Page(_lazy("pages.pong_streamlit", "pong_page"), title="Pong", icon="🏓"),
-        st.Page(_lazy("pages.leaderboard", "leaderboard_page"), title="Classement", icon="🏆"),
     ]
 )
 
