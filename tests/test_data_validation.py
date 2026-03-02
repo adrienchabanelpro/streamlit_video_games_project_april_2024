@@ -19,8 +19,8 @@ def _make_valid_df() -> pd.DataFrame:
             "JP_Sales": [0.1, 0.2],
             "Other_Sales": [0.1, 0.1],
             "Global_Sales": [1.7, 1.1],
-            "meta_score": [85.0, 90.0],
-            "user_review": [8.5, 9.0],
+            "meta_score": [8.5, 9.0],
+            "user_review": [7.5, 8.0],
         }
     )
 
@@ -46,7 +46,7 @@ class TestValidateDataframe:
 
     def test_meta_score_out_of_range_fails(self):
         df = _make_valid_df()
-        df.loc[0, "meta_score"] = 150.0
+        df.loc[0, "meta_score"] = 15.0
         is_valid, errors = validate_dataframe(df)
         assert is_valid is False
 
@@ -89,4 +89,4 @@ class TestSalesSchema:
         assert SALES_SCHEMA.coerce is True
 
     def test_required_columns_count(self):
-        assert len(SALES_SCHEMA.columns) == 12
+        assert len(SALES_SCHEMA.columns) == 13

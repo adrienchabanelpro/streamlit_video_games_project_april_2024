@@ -64,7 +64,7 @@ SALES_SCHEMA: DataFrameSchema = DataFrameSchema(
             pa.Float,
             checks=[
                 Check.greater_than_or_equal_to(0),
-                Check.less_than_or_equal_to(100),
+                Check.less_than_or_equal_to(10),
             ],
             nullable=True,
             required=True,
@@ -73,10 +73,16 @@ SALES_SCHEMA: DataFrameSchema = DataFrameSchema(
             pa.Float,
             checks=[
                 Check.greater_than_or_equal_to(0),
-                Check.less_than_or_equal_to(100),
+                Check.less_than_or_equal_to(10),
             ],
             nullable=True,
             required=True,
+        ),
+        "shipped": Column(
+            pa.Float,
+            checks=[Check.greater_than_or_equal_to(0)],
+            nullable=True,
+            required=False,
         ),
     },
     # Allow extra columns (e.g. Rank) that are not part of the core schema
