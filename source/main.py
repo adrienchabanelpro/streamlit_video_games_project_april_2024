@@ -30,18 +30,17 @@ def _lazy(module: str, func: str):
 # Native multi-page navigation (Streamlit 1.36+)
 pg = st.navigation(
     [
-        st.Page(_lazy("pages.presentation", "presentation_page"), title="Presentation", icon="🎯"),
-        st.Page(_lazy("pages.methodologie", "methodologie_page"), title="Methodologie", icon="📋"),
-        st.Page(_lazy("pages.dataviz", "dataviz_page"), title="DataViz", icon="📊"),
+        st.Page(_lazy("pages.home", "home_page"), title="Accueil", icon="🏠"),
+        st.Page(_lazy("pages.data_sources", "data_sources_page"), title="Sources de Donnees", icon="🗄️"),
+        st.Page(_lazy("pages.dataviz", "dataviz_page"), title="Analyse Exploratoire", icon="📊"),
         st.Page(_lazy("pages.feature_engineering", "feature_engineering_page"), title="Feature Engineering", icon="⚙️"),
-        st.Page(_lazy("pages.modelisation", "modelisation_page"), title="Modelisation", icon="🧠"),
-        st.Page(_lazy("pages.prediction", "prediction_page"), title="Prediction", icon="🔮"),
+        st.Page(_lazy("pages.model_training", "model_training_page"), title="Entrainement", icon="🧠"),
+        st.Page(_lazy("pages.prediction", "prediction_page"), title="Predictions", icon="🔮"),
+        st.Page(_lazy("pages.interpretability", "interpretability_page"), title="Interpretabilite", icon="🔍"),
         st.Page(_lazy("pages.what_if", "what_if_page"), title="What-If", icon="🔬"),
-        st.Page(_lazy("pages.recommendation", "recommendation_page"), title="Recommandations", icon="💡"),
-        st.Page(_lazy("pages.comparison", "comparison_page"), title="Comparaison", icon="⚖️"),
-        st.Page(_lazy("pages.trends", "trends_page"), title="Tendances", icon="📈"),
-        st.Page(_lazy("pages.perception", "perception_page"), title="Perception", icon="💬"),
-        st.Page(_lazy("pages.perspectives", "perspectives_page"), title="Perspectives", icon="🔭"),
+        st.Page(_lazy("pages.market_insights", "market_insights_page"), title="Tendances", icon="📈"),
+        st.Page(_lazy("pages.perception", "perception_page"), title="Sentiment NLP", icon="💬"),
+        st.Page(_lazy("pages.about", "about_page"), title="A Propos", icon="ℹ️"),
     ]
 )
 
