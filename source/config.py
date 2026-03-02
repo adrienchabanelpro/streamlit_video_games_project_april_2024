@@ -10,7 +10,7 @@ DATA_DIR: Path = ROOT / "data"
 MODELS_DIR: Path = ROOT / "models"
 REPORTS_DIR: Path = ROOT / "reports"
 IMAGES_DIR: Path = ROOT / "images"
-FONTS_DIR: Path = ROOT / "fonts"
+SCRIPTS_DIR: Path = ROOT / "scripts"
 
 # ---------------------------------------------------------------------------
 # Theme color constants (modern dark slate)

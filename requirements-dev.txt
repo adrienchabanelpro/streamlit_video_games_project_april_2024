@@ -12,3 +12,5 @@ dvc
 kagglehub
 steamspypi
 rapidfuzz
+howlongtobeatpy
+pytorch-tabnet

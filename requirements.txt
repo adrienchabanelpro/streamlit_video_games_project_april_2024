@@ -13,6 +13,5 @@ category_encoders
 xgboost
 catboost
 pandera
-streamlit-extras
-streamlit-lottie
+python-dotenv
 wordcloud
