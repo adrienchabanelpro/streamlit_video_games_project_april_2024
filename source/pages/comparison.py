@@ -3,7 +3,7 @@
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-from config import BG, BG_SECONDARY, CYAN, PINK, TEXT_COLOR, YELLOW
+from config import ACCENT, BG, BG_CARD, SECONDARY, TEXT_COLOR
 from prediction import (
     load_feature_means,
     load_models,
@@ -11,8 +11,6 @@ from prediction import (
     load_target_encoder,
     predict_single,
 )
-from streamlit_extras.add_vertical_space import add_vertical_space
-from streamlit_extras.colored_header import colored_header
 
 # ---------------------------------------------------------------------------
 # Input widget helpers
@@ -35,7 +33,7 @@ def _game_inputs(
         Dictionary with keys: genre, platform, publisher, year, meta_score, user_review.
     """
     st.markdown(
-        f"<h3 style='text-align:center; color:{CYAN};'>{label}</h3>",
+        f"<h3 style='text-align:center; color:{ACCENT};'>{label}</h3>",
         unsafe_allow_html=True,
     )
 
@@ -108,7 +106,7 @@ def _build_bar_chart(
             x=[pred_a],
             orientation="h",
             name=label_a,
-            marker_color=CYAN,
+            marker_color=ACCENT,
             text=[f"{pred_a:.4f} M"],
             textposition="auto",
             textfont=dict(color=BG, size=13),
@@ -120,7 +118,7 @@ def _build_bar_chart(
             x=[pred_b],
             orientation="h",
             name=label_b,
-            marker_color=PINK,
+            marker_color=SECONDARY,
             text=[f"{pred_b:.4f} M"],
             textposition="auto",
             textfont=dict(color=BG, size=13),
@@ -133,7 +131,7 @@ def _build_bar_chart(
         yaxis_title="",
         template="plotly_dark",
         paper_bgcolor=BG,
-        plot_bgcolor=BG_SECONDARY,
+        plot_bgcolor=BG_CARD,
         font=dict(color=TEXT_COLOR),
         barmode="group",
         showlegend=False,
@@ -196,8 +194,8 @@ def _build_radar_chart(
             theta=categories_closed,
             fill="toself",
             name=label_a,
-            line_color=CYAN,
-            fillcolor="rgba(0, 255, 204, 0.15)",
+            line_color=ACCENT,
+            fillcolor="rgba(59, 130, 246, 0.15)",
         )
     )
     fig.add_trace(
@@ -206,8 +204,8 @@ def _build_radar_chart(
             theta=categories_closed,
             fill="toself",
             name=label_b,
-            line_color=PINK,
-            fillcolor="rgba(255, 110, 199, 0.15)",
+            line_color=SECONDARY,
+            fillcolor="rgba(139, 92, 246, 0.15)",
         )
     )
 
@@ -217,7 +215,7 @@ def _build_radar_chart(
         paper_bgcolor=BG,
         font=dict(color=TEXT_COLOR),
         polar=dict(
-            bgcolor=BG_SECONDARY,
+            bgcolor=BG_CARD,
             radialaxis=dict(
                 visible=True,
                 range=[0, 105],
@@ -253,7 +251,7 @@ def _render_summary_card(
     st.markdown(
         f"""
         <div style="
-            background-color: {BG_SECONDARY};
+            background-color: {BG_CARD};
             border: 1px solid {accent_color};
             border-radius: 10px;
             padding: 18px;
@@ -292,12 +290,8 @@ def _render_summary_card(
 
 def comparison_page() -> None:
     """Game comparison page: side-by-side prediction of two game configurations."""
-    colored_header(
-        label="Comparaison de jeux",
-        description="Comparez les ventes predites de deux configurations de jeux cote a cote",
-        color_name="light-blue-70",
-    )
-    add_vertical_space(1)
+    st.title("Comparaison de jeux")
+    st.caption("Comparez les ventes predites de deux configurations de jeux cote a cote")
     st.write(
         "Configurez deux jeux hypothetiques et comparez leurs ventes predites "
         "cote a cote. Ajustez les parametres de chaque jeu pour explorer "
@@ -337,7 +331,7 @@ def comparison_page() -> None:
                 <div style="
                     width: 2px;
                     height: 380px;
-                    background: linear-gradient({CYAN}, {PINK});
+                    background: linear-gradient({ACCENT}, {SECONDARY});
                     border-radius: 2px;
                 "></div>
             </div>
@@ -392,9 +386,9 @@ def comparison_page() -> None:
         st.subheader("Resultats")
         res_a, res_b = st.columns(2)
         with res_a:
-            _render_summary_card("Jeu A", cfg_a, pred_a, CYAN)
+            _render_summary_card("Jeu A", cfg_a, pred_a, ACCENT)
         with res_b:
-            _render_summary_card("Jeu B", cfg_b, pred_b, PINK)
+            _render_summary_card("Jeu B", cfg_b, pred_b, SECONDARY)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -403,20 +397,20 @@ def comparison_page() -> None:
         diff_pct = (diff / max(abs(pred_b), 0.0001)) * 100
         if diff > 0:
             winner_text = "Jeu A vend plus"
-            diff_color = CYAN
+            diff_color = ACCENT
         elif diff < 0:
             winner_text = "Jeu B vend plus"
-            diff_color = PINK
+            diff_color = SECONDARY
         else:
             winner_text = "Egalite"
-            diff_color = YELLOW
+            diff_color = "#F59E0B"
 
         st.markdown(
             f"""
             <div style="
                 text-align: center;
                 padding: 14px;
-                background-color: {BG_SECONDARY};
+                background-color: {BG_CARD};
                 border: 1px solid {diff_color};
                 border-radius: 10px;
                 box-shadow: 0 0 10px {diff_color}30;

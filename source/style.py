@@ -1,5 +1,4 @@
-# style.py
-"""Inject global CSS for the retro neon dark theme.
+"""Inject global CSS for the modern dark slate theme.
 
 Uses JavaScript DOM injection via ``streamlit.components.v1.html()`` to bypass
 Streamlit's markdown HTML sanitizer, which strips ``<style>`` tags in recent
@@ -13,108 +12,115 @@ import streamlit.components.v1 as components
 
 _GOOGLE_FONTS_URL = (
     "https://fonts.googleapis.com/css2"
-    "?family=Press+Start+2P&family=Tiny5&display=swap"
+    "?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
 )
 
 _CSS = """\
-/* ---- Retro Neon Dark Theme ---- */
+/* ---- Modern Dark Slate Theme ---- */
 
 /* Sidebar */
 [data-testid="stSidebar"] {
-    background-color: #1A1A2E;
-    border-right: 2px solid #00FFCC;
+    background-color: #1E293B;
+    border-right: 1px solid #334155;
 }
 [data-testid="stSidebar"] * {
-    color: #E0E0E0;
+    color: #F1F5F9;
 }
 
-/* Headings — neon cyan with glow */
+/* Headings */
 h1, h2, h3, h4, h5, h6 {
-    font-family: 'Tiny5', sans-serif !important;
-    color: #00FFCC !important;
-    text-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 700 !important;
+    color: #F1F5F9 !important;
 }
+h1 { color: #3B82F6 !important; }
 
 /* Body text */
 .stMarkdown, .stText, p, li, span {
-    color: #E0E0E0;
+    color: #F1F5F9;
+    font-family: 'Inter', sans-serif;
 }
 
 /* Links */
 a {
-    color: #FF6EC7 !important;
+    color: #3B82F6 !important;
+    text-decoration: none;
 }
 a:hover {
-    color: #FFFF00 !important;
-    text-shadow: 0 0 8px rgba(255, 255, 0, 0.6);
+    color: #60A5FA !important;
 }
 
-/* Buttons — neon pink accent */
+/* Buttons — blue accent */
 .stButton > button {
-    background-color: transparent;
-    color: #FF6EC7;
-    border: 2px solid #FF6EC7;
-    font-family: 'Press Start 2P', cursive;
-    font-size: 12px;
-    transition: all 0.3s;
+    background-color: #3B82F6;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    padding: 8px 20px;
+    transition: all 0.2s ease;
 }
 .stButton > button:hover {
-    background-color: #FF6EC7;
-    color: #0D0D0D;
-    box-shadow: 0 0 15px rgba(255, 110, 199, 0.6);
+    background-color: #2563EB;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
-/* Metrics — neon glow */
+/* Metrics — glassmorphism card */
 [data-testid="stMetric"] {
-    background-color: #1A1A2E;
-    border: 1px solid #00FFCC;
-    border-radius: 8px;
-    padding: 12px;
-    box-shadow: 0 0 8px rgba(0, 255, 204, 0.2);
+    background-color: rgba(30, 41, 59, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 16px;
 }
 [data-testid="stMetricValue"] {
-    color: #00FFCC !important;
-    text-shadow: 0 0 6px rgba(0, 255, 204, 0.4);
+    color: #3B82F6 !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-weight: 600 !important;
 }
 [data-testid="stMetricLabel"] {
-    color: #E0E0E0 !important;
+    color: #94A3B8 !important;
+    font-family: 'Inter', sans-serif !important;
 }
 
 /* Selectbox / number input */
 .stSelectbox label, .stNumberInput label, .stSlider label {
-    color: #E0E0E0 !important;
+    color: #F1F5F9 !important;
 }
 
 /* Dataframe styling */
 .stDataFrame {
-    border: 1px solid #00FFCC;
-    border-radius: 4px;
+    border: 1px solid #334155;
+    border-radius: 8px;
 }
 
 /* Tabs */
 .stTabs [data-baseweb="tab"] {
-    color: #E0E0E0;
+    color: #94A3B8;
+    font-family: 'Inter', sans-serif;
 }
 .stTabs [aria-selected="true"] {
-    color: #00FFCC !important;
-    border-bottom-color: #00FFCC !important;
+    color: #3B82F6 !important;
+    border-bottom-color: #3B82F6 !important;
 }
 
 /* Divider lines */
 hr {
-    border-color: #333366;
+    border-color: #334155;
 }
 
 /* Spinner */
 .stSpinner > div {
-    border-top-color: #FF6EC7 !important;
+    border-top-color: #3B82F6 !important;
 }
 
 /* File uploader */
 [data-testid="stFileUploader"] {
-    border: 1px dashed #00FFCC;
-    border-radius: 8px;
-    padding: 10px;
+    border: 1px dashed #334155;
+    border-radius: 12px;
+    padding: 16px;
 }
 
 /* Warning / info / error boxes */
@@ -124,165 +130,105 @@ hr {
 
 /* Navigation items */
 [data-testid="stSidebarNav"] a {
-    color: #E0E0E0 !important;
+    color: #F1F5F9 !important;
+    font-family: 'Inter', sans-serif !important;
 }
 [data-testid="stSidebarNav"] a:hover {
-    color: #00FFCC !important;
+    color: #3B82F6 !important;
 }
 
 /* ---- Expanders ---- */
-.streamlit-expanderHeader {
-    background-color: #1A1A2E !important;
-    border: 1px solid #00FFCC !important;
-    border-radius: 8px;
-    color: #E0E0E0 !important;
-    box-shadow: 0 0 8px rgba(0, 255, 204, 0.25);
-}
-.streamlit-expanderContent {
-    background-color: #12122A !important;
-    border: 1px solid #00FFCC !important;
-    border-top: none !important;
-    border-radius: 0 0 8px 8px;
-}
 details[data-testid="stExpander"] {
-    background-color: #1A1A2E;
-    border: 1px solid #00FFCC;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 255, 204, 0.2);
+    background-color: rgba(30, 41, 59, 0.8);
+    border: 1px solid #334155;
+    border-radius: 12px;
 }
 details[data-testid="stExpander"] summary {
-    color: #E0E0E0 !important;
+    color: #F1F5F9 !important;
+    font-family: 'Inter', sans-serif !important;
 }
 details[data-testid="stExpander"] > div {
-    background-color: #12122A;
+    background-color: #1E293B;
 }
 
 /* ---- Text inputs and text areas ---- */
 .stTextInput input,
 .stTextArea textarea {
-    background-color: #1A1A2E !important;
-    color: #E0E0E0 !important;
-    border: 1px solid #333366 !important;
-    border-radius: 6px;
-    transition: border-color 0.3s, box-shadow 0.3s;
+    background-color: #1E293B !important;
+    color: #F1F5F9 !important;
+    border: 1px solid #334155 !important;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif !important;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 .stTextInput input:focus,
 .stTextArea textarea:focus {
-    border-color: #00FFCC !important;
-    box-shadow: 0 0 8px rgba(0, 255, 204, 0.4) !important;
+    border-color: #3B82F6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
     outline: none !important;
 }
 
-/* ---- Sliders: dark track, cyan glow thumb ---- */
+/* ---- Sliders ---- */
 .stSlider [data-baseweb="slider"] [role="slider"] {
-    background-color: #00FFCC !important;
-    box-shadow: 0 0 10px rgba(0, 255, 204, 0.6);
-    border: 2px solid #00FFCC !important;
-}
-.stSlider [data-baseweb="slider"] div[data-testid="stTickBar"] {
-    background-color: #1A1A2E !important;
+    background-color: #3B82F6 !important;
+    border: 2px solid #3B82F6 !important;
 }
 .stSlider [data-baseweb="slider"] > div > div:first-child {
-    background-color: #333366 !important;
+    background-color: #334155 !important;
 }
 .stSlider [data-baseweb="slider"] > div > div:nth-child(2) {
-    background: linear-gradient(90deg, #00FFCC, #FF6EC7) !important;
+    background: linear-gradient(90deg, #3B82F6, #8B5CF6) !important;
 }
 
-/* ---- Radio buttons and checkboxes: neon accent ---- */
+/* ---- Radio buttons and checkboxes ---- */
 .stRadio label,
 .stCheckbox label {
-    color: #E0E0E0 !important;
+    color: #F1F5F9 !important;
     transition: color 0.2s;
 }
 .stRadio label:hover,
 .stCheckbox label:hover {
-    color: #00FFCC !important;
+    color: #3B82F6 !important;
 }
-.stRadio [role="radiogroup"] label[data-checked="true"],
-.stRadio [role="radiogroup"] label[aria-checked="true"] {
-    color: #00FFCC !important;
-    text-shadow: 0 0 6px rgba(0, 255, 204, 0.4);
-}
-.stCheckbox input:checked + label {
-    color: #00FFCC !important;
-    text-shadow: 0 0 6px rgba(0, 255, 204, 0.4);
-}
-/* Custom radio/checkbox indicator color */
 .stRadio [data-baseweb="radio"] div:first-child {
-    border-color: #00FFCC !important;
+    border-color: #3B82F6 !important;
 }
 .stRadio [data-baseweb="radio"] div:first-child::after {
-    background-color: #00FFCC !important;
+    background-color: #3B82F6 !important;
 }
 .stCheckbox [data-baseweb="checkbox"] span {
-    border-color: #00FFCC !important;
+    border-color: #3B82F6 !important;
 }
 .stCheckbox [data-baseweb="checkbox"] span[aria-checked="true"] {
-    background-color: #00FFCC !important;
-    border-color: #00FFCC !important;
+    background-color: #3B82F6 !important;
+    border-color: #3B82F6 !important;
 }
 
-/* ---- Progress bars: gradient cyan to pink ---- */
+/* ---- Progress bars ---- */
 .stProgress > div > div > div {
-    background: linear-gradient(90deg, #00FFCC, #FF6EC7) !important;
+    background: linear-gradient(90deg, #3B82F6, #8B5CF6) !important;
     border-radius: 4px;
 }
 .stProgress > div > div {
-    background-color: #1A1A2E !important;
+    background-color: #1E293B !important;
     border-radius: 4px;
 }
 
 /* ---- Custom scrollbar ---- */
 ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
 }
 ::-webkit-scrollbar-track {
-    background: #0D0D0D;
-    border-radius: 5px;
+    background: #0F172A;
+    border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb {
-    background: #00FFCC;
-    border-radius: 5px;
-    box-shadow: 0 0 6px rgba(0, 255, 204, 0.3);
+    background: #334155;
+    border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #33FFD6;
-}
-
-/* ---- Neon pulse keyframes for headings ---- */
-@keyframes neonPulse {
-    0%, 100% {
-        text-shadow: 0 0 10px rgba(0, 255, 204, 0.5),
-                     0 0 20px rgba(0, 255, 204, 0.2);
-    }
-    50% {
-        text-shadow: 0 0 16px rgba(0, 255, 204, 0.8),
-                     0 0 30px rgba(0, 255, 204, 0.4);
-    }
-}
-h1, h2 {
-    animation: neonPulse 3s ease-in-out infinite;
-}
-
-/* ---- Retro scanline overlay on main content area ---- */
-[data-testid="stAppViewContainer"]::after {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 9999;
-    background: repeating-linear-gradient(
-        0deg,
-        rgba(0, 0, 0, 0.03) 0px,
-        rgba(0, 0, 0, 0.03) 1px,
-        transparent 1px,
-        transparent 3px
-    );
+    background: #475569;
 }
 
 /* ---- Mobile-responsive layout ---- */
@@ -295,9 +241,6 @@ h1, h2 {
     [data-testid="stSidebar"] {
         min-width: 180px !important;
         max-width: 220px !important;
-    }
-    [data-testid="stSidebar"] img {
-        max-width: 120px !important;
     }
 
     .stPlotlyChart,
@@ -321,18 +264,11 @@ h1, h2 {
         padding: 0.5rem 0.8rem !important;
     }
     [data-testid="stMetric"] {
-        padding: 8px !important;
+        padding: 10px !important;
     }
     .stButton > button {
-        font-size: 10px !important;
-        padding: 6px 12px !important;
-    }
-
-    .arcade-screen {
-        font-size: 14px !important;
-        top: -200px !important;
-        width: 80% !important;
-        height: 140px !important;
+        font-size: 13px !important;
+        padding: 6px 14px !important;
     }
 }
 """
@@ -356,18 +292,18 @@ def apply_style() -> None:
             var doc = window.parent.document;
 
             // Inject Google Fonts (once)
-            if (!doc.getElementById('neon-google-fonts')) {{
+            if (!doc.getElementById('modern-google-fonts')) {{
                 var link = doc.createElement('link');
-                link.id = 'neon-google-fonts';
+                link.id = 'modern-google-fonts';
                 link.rel = 'stylesheet';
                 link.href = {font_url_json};
                 doc.head.appendChild(link);
             }}
 
             // Inject CSS (once)
-            if (!doc.getElementById('neon-theme-css')) {{
+            if (!doc.getElementById('modern-theme-css')) {{
                 var style = doc.createElement('style');
-                style.id = 'neon-theme-css';
+                style.id = 'modern-theme-css';
                 style.textContent = {css_json};
                 doc.head.appendChild(style);
             }}

@@ -1,13 +1,9 @@
 """User perception analysis page with DistilBERT sentiment, word clouds, and aspect analysis."""
 
-import base64
-from io import BytesIO
-
 import plotly.graph_objects as go
 import streamlit as st
 from analyse_avis_utilisateurs import analyze_aspects, has_transformers, predict_user_reviews
-from config import BG, CYAN, IMAGES_DIR, PINK, PLOTLY_LAYOUT, TEXT_COLOR
-from PIL import Image
+from config import ACCENT, BG, PLOTLY_LAYOUT, SECONDARY, TEXT_COLOR
 
 
 def perception_page() -> None:
@@ -60,7 +56,7 @@ def perception_page() -> None:
     # Disclaimer
     st.markdown("---")
     st.markdown(
-        "<p style='text-align: center; color: #666;'>"
+        "<p style='text-align: center; color: #94A3B8;'>"
         "Modeles : DistilBERT (binaire) et BERT multilingual (5 etoiles). "
         "Ces modeles sont en version beta et peuvent faire des erreurs. "
         "Envisagez de verifier les informations importantes.</p>",
@@ -130,7 +126,7 @@ def _run_star_analysis(uploaded_file: object) -> None:
 
     # Star distribution chart
     star_counts = data["stars"].value_counts().sort_index()
-    colors = ["#FF4444", "#FF8800", "#FFCC00", "#88CC00", "#00CC66"]
+    colors = ["#EF4444", "#F97316", "#EAB308", "#22C55E", "#10B981"]
 
     fig = go.Figure()
     for star_val in range(1, 6):
@@ -215,7 +211,7 @@ def _run_aspect_analysis(uploaded_file: object) -> None:
             name="Positif",
             x=aspects,
             y=pos_counts,
-            marker_color=CYAN,
+            marker_color=ACCENT,
             text=pos_counts,
             textposition="outside",
         )
@@ -225,7 +221,7 @@ def _run_aspect_analysis(uploaded_file: object) -> None:
             name="Negatif",
             x=aspects,
             y=neg_counts,
-            marker_color=PINK,
+            marker_color=SECONDARY,
             text=neg_counts,
             textposition="outside",
         )
@@ -276,6 +272,8 @@ def _display_word_clouds(data: object) -> None:
         st.info("Installez 'wordcloud' (pip install wordcloud) pour afficher les nuages de mots.")
         return
 
+    from PIL import Image
+
     pos_reviews = data[data["predictions"] == 1]["user_review"].str.cat(sep=" ")
     neg_reviews = data[data["predictions"] == 0]["user_review"].str.cat(sep=" ")
 
@@ -290,7 +288,7 @@ def _display_word_clouds(data: object) -> None:
             wc = WordCloud(
                 width=600,
                 height=400,
-                background_color="#0D0D0D",
+                background_color=BG,
                 colormap="cool",
                 max_words=100,
             ).generate(pos_reviews)
@@ -326,7 +324,7 @@ def _display_word_clouds(data: object) -> None:
             wc = WordCloud(
                 width=600,
                 height=400,
-                background_color="#0D0D0D",
+                background_color=BG,
                 colormap="spring",
                 max_words=100,
             ).generate(neg_reviews)
@@ -359,20 +357,12 @@ def _display_word_clouds(data: object) -> None:
 
 
 # ------------------------------------------------------------------
-# Gauge chart
+# Gauge chart (no image background)
 # ------------------------------------------------------------------
 
 
 def _display_gauge(positive_percentage: float) -> None:
-    """Render the Plotly gauge with Street Fighter background."""
-
-    def _pil_to_base64(img_path: str) -> str:
-        """Convert an image file to a base64-encoded data URI."""
-        img = Image.open(img_path)
-        buffer = BytesIO()
-        img.save(buffer, format="PNG")
-        img_str = base64.b64encode(buffer.getvalue()).decode()
-        return f"data:image/png;base64,{img_str}"
+    """Render the Plotly gauge for positive sentiment percentage."""
 
     def _get_color(value: float, alpha: float = 0.5) -> str:
         """Return an RGBA color string for the given gauge *value*."""
@@ -391,27 +381,21 @@ def _display_gauge(positive_percentage: float) -> None:
             blue = 0
         return f"rgba({red},{green},{blue},{alpha})"
 
-    image_path = IMAGES_DIR / "street_fighter2.png"
-    if not image_path.exists():
-        st.warning("Image street_fighter2.png introuvable.")
-        return
-
-    encoded_image = _pil_to_base64(str(image_path))
-
     steps = [{"range": [i, i + 1], "color": _get_color(i, alpha=0.7)} for i in range(101)]
 
     fig = go.Figure(
         go.Indicator(
             mode="gauge+number+delta",
+            value=positive_percentage,
             gauge={
                 "axis": {
                     "range": [0, 100],
-                    "tickfont": {"size": 25, "family": "Arial", "color": "white"},
+                    "tickfont": {"size": 18, "family": "Inter, sans-serif", "color": "#F1F5F9"},
                 },
-                "bar": {"color": "rgba(0,0,0,0)"},
+                "bar": {"color": ACCENT},
                 "steps": steps,
                 "threshold": {
-                    "line": {"color": CYAN, "width": 5},
+                    "line": {"color": ACCENT, "width": 5},
                     "thickness": 0.75,
                     "value": positive_percentage,
                 },
@@ -426,25 +410,11 @@ def _display_gauge(positive_percentage: float) -> None:
             "x": 0.5,
             "xanchor": "center",
             "yanchor": "top",
-            "font": {"color": CYAN},
+            "font": {"color": ACCENT},
         },
         paper_bgcolor=BG,
-        font=dict(family="Arial", size=18, color=TEXT_COLOR),
+        font=dict(family="Inter, sans-serif", size=18, color=TEXT_COLOR),
         margin=dict(t=50, b=0, l=0, r=0),
-        images=[
-            dict(
-                source=encoded_image,
-                xref="paper",
-                yref="paper",
-                x=0.5,
-                y=0.5,
-                sizex=1,
-                sizey=1,
-                xanchor="center",
-                yanchor="middle",
-                layer="below",
-            )
-        ],
     )
 
     st.plotly_chart(fig)

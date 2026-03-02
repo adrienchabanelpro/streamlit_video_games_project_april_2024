@@ -3,7 +3,7 @@
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
-from config import CYAN, PINK, PLOTLY_LAYOUT
+from config import ACCENT, PLOTLY_LAYOUT, SECONDARY
 from prediction import (
     load_feature_means,
     load_models,
@@ -11,18 +11,12 @@ from prediction import (
     load_target_encoder,
     predict_single,
 )
-from streamlit_extras.add_vertical_space import add_vertical_space
-from streamlit_extras.colored_header import colored_header
 
 
 def what_if_page() -> None:
     """What-if analysis page: sweep one variable and see impact on predictions."""
-    colored_header(
-        label="Analyse What-If",
-        description="Explorez comment chaque variable influence les predictions de ventes",
-        color_name="light-blue-70",
-    )
-    add_vertical_space(1)
+    st.title("Analyse What-If")
+    st.caption("Explorez comment chaque variable influence les predictions de ventes")
     st.write(
         "Selectionnez une configuration de base, puis choisissez une variable "
         "a faire varier pour observer son impact en temps reel."
@@ -119,7 +113,7 @@ def what_if_page() -> None:
                 y=predictions,
                 mode="lines+markers",
                 name="Ventes predites",
-                line=dict(color=CYAN, width=3),
+                line=dict(color=ACCENT, width=3),
                 marker=dict(size=4),
             )
         )
@@ -152,7 +146,7 @@ def what_if_page() -> None:
                 y=[base_pred],
                 mode="markers",
                 name="Valeur de base",
-                marker=dict(color=PINK, size=14, symbol="star"),
+                marker=dict(color=SECONDARY, size=14, symbol="star"),
             )
         )
 
@@ -164,7 +158,6 @@ def what_if_page() -> None:
         )
 
         st.plotly_chart(fig, use_container_width=True)
-        add_vertical_space(1)
 
         # --- Summary stats ---
         col_min, col_max, col_range = st.columns(3)

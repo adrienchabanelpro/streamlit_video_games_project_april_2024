@@ -3,20 +3,21 @@
 from pathlib import Path
 
 from config import (
+    ACCENT,
     BG,
-    BG_SECONDARY,
-    CYAN,
+    BG_CARD,
+    BORDER,
     DATA_DIR,
     FONTS_DIR,
     IMAGES_DIR,
     MODELS_DIR,
-    PINK,
     PLOTLY_LAYOUT,
-    PURPLE,
     REPORTS_DIR,
     ROOT,
+    SECONDARY,
+    SUCCESS,
     TEXT_COLOR,
-    YELLOW,
+    TEXT_MUTED,
 )
 
 
@@ -48,7 +49,7 @@ class TestPaths:
 
 class TestThemeConstants:
     def test_colors_are_hex_strings(self):
-        for color in [BG, BG_SECONDARY, CYAN, PINK, YELLOW, PURPLE, TEXT_COLOR]:
+        for color in [BG, BG_CARD, ACCENT, SECONDARY, SUCCESS, TEXT_COLOR, TEXT_MUTED, BORDER]:
             assert isinstance(color, str)
             assert color.startswith("#")
             assert len(color) == 7  # #RRGGBB
