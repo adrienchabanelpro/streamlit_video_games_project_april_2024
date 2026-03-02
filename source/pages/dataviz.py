@@ -19,11 +19,12 @@ def _load_dataviz_data() -> pd.DataFrame:
             f"Validation des donnees : {len(errors)} probleme(s) detecte(s). "
             "Les visualisations peuvent etre affectees."
         )
-    df = df.dropna(axis=0)
-    df["Year"] = df["Year"].astype(str)
-    df["Year"] = df["Year"].str[:-2]
-    df["Year"] = pd.to_datetime(df["Year"], format="%Y")
-    df["Year"] = df["Year"].dt.year
+    # Only drop rows missing critical viz columns (not steam_* which are mostly NaN)
+    df = df.dropna(subset=["Year", "Genre", "Platform", "Publisher", "Global_Sales"])
+    df["Year"] = df["Year"].astype(int)
+    # Fill optional scores with median for charts that use them
+    df["meta_score"] = df["meta_score"].fillna(df["meta_score"].median())
+    df["user_review"] = df["user_review"].fillna(df["user_review"].median())
     return df
 
 

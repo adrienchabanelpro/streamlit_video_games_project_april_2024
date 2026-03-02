@@ -37,6 +37,7 @@ def _build_feature_matrix(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
     platform_dummies = pd.get_dummies(df["Platform"], prefix="platform")
 
     numericals = df[["Year", "meta_score", "user_review", "Global_Sales"]].copy()
+    numericals = numericals.fillna(numericals.median())
     scaler = StandardScaler()
     numericals_scaled = pd.DataFrame(
         scaler.fit_transform(numericals),

@@ -19,7 +19,7 @@ def _load_data() -> pd.DataFrame:
             "Les tendances peuvent etre affectees."
         )
     df = df.dropna(subset=["Year", "Publisher", "Genre", "Platform"])
-    df["Year"] = df["Year"].astype(str).str[:-2].astype(int)
+    df["Year"] = df["Year"].astype(int)
     return df
 
 

@@ -8,7 +8,7 @@
 
 ## Architecture
 
-- `source/main.py` — Entry point, sidebar nav routing to 15 pages
+- `source/main.py` — Entry point, sidebar nav routing to 12 pages
 - `source/config.py` — Paths, constants, Plotly layout
 - `source/style.py` — CSS injection (neon dark theme, Press Start 2P + Tiny5 fonts)
 - `source/pages/dataviz.py` — 20+ charts (Plotly)
@@ -16,7 +16,6 @@
 - `source/pages/perception.py` — NLP sentiment analysis (DistilBERT + LR fallback)
 - `source/ml/predict.py` — Inference pipeline (loads 3 models + transformers)
 - `source/analyse_avis_utilisateurs.py` — `clean_text()`, `predict_user_reviews()`
-- `source/games/` — Pygame games (snake, casse_brique, space_invaders)
 - `scripts/train_model.py` — Full training pipeline (ensemble + Optuna)
 - `scripts/data_collection/` — Kaggle + SteamSpy data collection + fuzzy merge
 
@@ -47,4 +46,4 @@
 1. ~~Possible data leakage~~ — Fixed in v2 (regional sales excluded, temporal split)
 2. ~~OneHotEncoder bloat~~ — Fixed in v2 (target encoding: 10 features instead of 576)
 3. ~~No caching~~ — Fixed (st.cache_data/st.cache_resource on all loaders)
-4. Pygame games need local display (no cloud support)
+4. ~~Pygame games~~ — Removed (incompatible with Streamlit Cloud)
