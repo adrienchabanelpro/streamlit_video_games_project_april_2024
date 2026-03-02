@@ -3,7 +3,7 @@
 
 import pandas as pd
 import streamlit as st
-from config import DATA_DIR, IMAGES_DIR
+from config import DATA_DIR
 from data_validation import validate_dataframe
 
 
@@ -23,18 +23,7 @@ def _load_presentation_data() -> pd.DataFrame:
 
 def presentation_page() -> None:
     """Render the project presentation and objectives page."""
-    # Construire les chemins absolus pour les images
-    image_path1 = IMAGES_DIR / "image_pres.png"
-    image_path2 = IMAGES_DIR / "street.png"
-
-    # Vérifier et afficher les images
-    for image_path in [image_path1, image_path2]:
-        if image_path.exists():
-            st.image(str(image_path), use_container_width=True)
-        else:
-            st.write(f"Erreur : l'image {image_path.name} est introuvable.")
-
-    st.title("Présentation du projet")
+    st.title("Presentation du projet")
 
     st.markdown("""
         Dans le cadre de notre formation en analyse de données et en vue de développer nos compétences pratiques, nous avons choisi d'explorer et d'analyser les ventes de jeux vidéo.

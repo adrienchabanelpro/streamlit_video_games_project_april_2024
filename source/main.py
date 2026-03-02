@@ -1,24 +1,14 @@
-"""Main entry point: multi-page Streamlit app with retro neon theme."""
+"""Main entry point: multi-page Streamlit app for video game sales prediction."""
 
 import importlib
 
 import streamlit as st
-from config import IMAGES_DIR
 from style import apply_style
 
 st.set_page_config(page_title="Prediction Jeux Video", page_icon="🎮", layout="wide")
 
-# Apply global style (persists across all pages)
+# Apply global style
 apply_style()
-
-# Sidebar branding
-navigation_gif_path = IMAGES_DIR / "chun-li-walking-animation.gif"
-if navigation_gif_path.exists():
-    st.sidebar.image(str(navigation_gif_path), width=200)
-else:
-    st.sidebar.write(
-        f"Erreur : l'image {navigation_gif_path.name} est introuvable. Verifiez le dossier images/."
-    )
 
 
 # ---------------------------------------------------------------------------

@@ -3,10 +3,7 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
-from config import IMAGES_DIR
 from ml.predict import NUMERICAL_FEATURES, get_features, is_log_transformed, prepare_for_prediction
-from streamlit_extras.add_vertical_space import add_vertical_space
-from streamlit_extras.colored_header import colored_header
 
 
 def _get_input(train_stats: dict) -> tuple[str, str, str, dict]:
@@ -44,15 +41,12 @@ def _get_input(train_stats: dict) -> tuple[str, str, str, dict]:
 
 def prediction_page() -> None:
     """Render the prediction page."""
-    # Import cached loaders from the wrapper module (not ml.predict directly)
     from prediction import load_feature_means, load_models
 
-    colored_header(
-        label="Prediction des ventes de jeux video",
-        description="Estimez les ventes mondiales d'un jeu video a l'aide de notre ensemble de modeles",
-        color_name="light-blue-70",
+    st.title("Prediction des ventes de jeux video")
+    st.caption(
+        "Estimez les ventes mondiales d'un jeu video a l'aide de notre ensemble de modeles"
     )
-    add_vertical_space(1)
 
     try:
         lgb_model, xgb_model, cb_model = load_models()
@@ -60,53 +54,6 @@ def prediction_page() -> None:
     except Exception as e:
         st.error(f"Erreur lors du chargement du modele : {e}")
         return
-
-    # CSS for the arcade screen overlay
-    st.markdown(
-        """
-        <style>
-        .arcade-container {
-            position: relative;
-            text-align: center;
-            color: white;
-            max-width: 700px;
-            margin: 0 auto;
-        }
-        .arcade-image {
-            width: 100%;
-            height: auto;
-        }
-        .arcade-screen {
-            font-family: 'Press Start 2P', cursive;
-            color: #00FFCC;
-            text-shadow: 0 0 10px rgba(0, 255, 204, 0.6);
-            padding: 10px;
-            border-radius: 5px;
-            text-align: center;
-            font-size : 22px;
-            position: absolute;
-            top: -300px;
-            left: 52%;
-            transform: translate(-50%, -50%);
-            width: 65%;
-            height: 200px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # Arcade machine image
-    image_path = IMAGES_DIR / "street_arcade.jpg"
-    if image_path.exists():
-        st.image(str(image_path), width=1000)
-    else:
-        st.write(
-            f"Erreur : l'image {image_path.name} est introuvable. Verifiez le dossier images/."
-        )
 
     # User inputs
     publisher_input, genre_input, platform_input, input_data = _get_input(train_stats)
@@ -125,14 +72,13 @@ def prediction_page() -> None:
                 if is_log_transformed():
                     user_pred = np.expm1(user_pred)
 
-                st.markdown(
-                    f"""
-                    <div class="arcade-container">
-                        <div class="arcade-screen">Prediction pour les ventes:<br><br> {user_pred[0]:.4f} millions d'unites</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Ventes predites", f"{user_pred[0]:.4f} M")
+                with col2:
+                    st.metric("Genre", genre_input)
+                with col3:
+                    st.metric("Plateforme", platform_input)
 
                 export_df = pd.DataFrame(
                     {
@@ -154,13 +100,9 @@ def prediction_page() -> None:
             except Exception as e:
                 st.error(f"Erreur lors de la prediction : {e}")
     else:
-        st.markdown(
-            """
-            <div class="arcade-container">
-                <div class="arcade-screen">Entrez les informations necessaires pour predire les ventes globales d'un jeu video</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+        st.info(
+            "Entrez les informations necessaires dans la barre laterale "
+            "et cliquez sur 'Predire' pour estimer les ventes globales."
         )
 
     # --- Batch prediction ---
@@ -213,7 +155,7 @@ def prediction_page() -> None:
 
     st.markdown("---")
     st.markdown(
-        "<p style='text-align: center; color: #666;'>"
+        "<p style='text-align: center; color: #94A3B8;'>"
         "Ce modele est en version beta et peut faire des erreurs. "
         "Envisagez de verifier les informations importantes.</p>",
         unsafe_allow_html=True,

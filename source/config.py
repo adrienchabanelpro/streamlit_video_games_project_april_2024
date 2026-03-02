@@ -13,15 +13,16 @@ IMAGES_DIR: Path = ROOT / "images"
 FONTS_DIR: Path = ROOT / "fonts"
 
 # ---------------------------------------------------------------------------
-# Theme color constants (retro neon dark)
+# Theme color constants (modern dark slate)
 # ---------------------------------------------------------------------------
-BG: str = "#0D0D0D"
-BG_SECONDARY: str = "#1A1A2E"
-CYAN: str = "#00FFCC"
-PINK: str = "#FF6EC7"
-YELLOW: str = "#FFFF00"
-PURPLE: str = "#7B68EE"
-TEXT_COLOR: str = "#E0E0E0"
+BG: str = "#0F172A"
+BG_CARD: str = "#1E293B"
+ACCENT: str = "#3B82F6"
+SECONDARY: str = "#8B5CF6"
+SUCCESS: str = "#10B981"
+TEXT_COLOR: str = "#F1F5F9"
+TEXT_MUTED: str = "#94A3B8"
+BORDER: str = "#334155"
 
 # ---------------------------------------------------------------------------
 # Shared Plotly layout dict
@@ -29,6 +30,6 @@ TEXT_COLOR: str = "#E0E0E0"
 PLOTLY_LAYOUT: dict = {
     "template": "plotly_dark",
     "paper_bgcolor": BG,
-    "plot_bgcolor": BG_SECONDARY,
-    "font": {"color": TEXT_COLOR},
+    "plot_bgcolor": BG_CARD,
+    "font": {"color": TEXT_COLOR, "family": "Inter, sans-serif"},
 }

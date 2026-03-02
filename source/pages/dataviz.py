@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-from config import CYAN, DATA_DIR, PINK, PLOTLY_LAYOUT, PURPLE, YELLOW
+from config import ACCENT, DATA_DIR, PLOTLY_LAYOUT, SECONDARY
 from data_validation import validate_dataframe
 
 
@@ -76,7 +76,7 @@ def dataviz_page() -> None:
 
     st.markdown("---")
 
-    _REGION_COLORS = [CYAN, PINK, YELLOW, PURPLE]
+    _REGION_COLORS = [ACCENT, SECONDARY, "#10B981", "#F59E0B"]
 
     # ------------------------------------------------------------------
     # 1. Global sales over time
@@ -93,18 +93,18 @@ def dataviz_page() -> None:
             y=sales_by_year,
             mode="lines+markers",
             name="Ventes annuelles",
-            line=dict(color=CYAN),
+            line=dict(color=ACCENT),
         )
     )
     fig.add_hline(
         y=mean_sales,
-        line=dict(color=PINK, dash="solid"),
+        line=dict(color=SECONDARY, dash="solid"),
         annotation_text=f"Moyenne: {mean_sales:.2f} M",
         annotation_position="bottom right",
     )
     fig.add_hline(
         y=median_sales,
-        line=dict(color=YELLOW, dash="dash"),
+        line=dict(color="#F59E0B", dash="dash"),
         annotation_text=f"Mediane: {median_sales:.2f} M",
         annotation_position="bottom right",
     )
@@ -304,7 +304,7 @@ def dataviz_page() -> None:
         title="Ventes globales vs Meta Score",
         labels={"meta_score": "Meta Score", "Global_Sales": "Ventes (millions)"},
         log_y=True,
-        color_discrete_sequence=[CYAN],
+        color_discrete_sequence=[ACCENT],
     )
     fig.update_layout(**PLOTLY_LAYOUT)
     st.plotly_chart(fig, use_container_width=True)
@@ -318,7 +318,7 @@ def dataviz_page() -> None:
             title="Ventes globales vs User Review",
             labels={"user_review": "User Review", "Global_Sales": "Ventes (millions)"},
             log_y=True,
-            color_discrete_sequence=[PINK],
+            color_discrete_sequence=[SECONDARY],
         )
         fig.update_layout(**PLOTLY_LAYOUT)
         st.plotly_chart(fig, use_container_width=True)

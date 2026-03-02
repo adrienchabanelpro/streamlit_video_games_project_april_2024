@@ -26,9 +26,28 @@ Thumbs.db
 # Claude Code (session transcripts, auto-memory — not project config)
 .claude/projects/
 .claude/settings.local.json
+
+# Claude Flow framework (not needed for app)
+.claude/agents/
+.claude/skills/
+.claude/commands/
+.claude/helpers/
+.claude/memory.db
+.claude-flow/
+.swarm/
+.mcp.json
+
+# ML artifacts (regeneratable)
 catboost_info/
 mlruns/
 mlartifacts/
+mlflow.db
+
+# Environment files
+.env
 
 # Raw data downloads (large, re-downloadable)
 data/raw/
+
+# Data collection progress files
+scripts/data_collection/*_progress.json
