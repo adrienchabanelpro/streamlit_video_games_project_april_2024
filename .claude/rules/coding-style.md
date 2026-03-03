@@ -1,8 +1,8 @@
 # Coding Style Rules
 
 ## Language
-- UI text: French
-- Code (variables, functions, comments): English preferred for new code
+- UI text: English
+- Code (variables, functions, comments): English
 - Docstrings: English
 
 ## Python

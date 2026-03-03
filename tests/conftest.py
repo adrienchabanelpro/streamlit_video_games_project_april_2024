@@ -9,6 +9,7 @@ import pytest
 
 # Add project root and source to sys.path so tests can import project modules
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "source"))
 sys.path.insert(0, str(ROOT / "source" / "ml"))

@@ -150,8 +150,8 @@ def predict_user_reviews(
     """
     if not _HAS_TRANSFORMERS:
         st.warning(
-            "La bibliotheque `transformers` n'est pas installee. "
-            "L'analyse de sentiment n'est pas disponible dans cet environnement."
+            "The `transformers` library is not installed. "
+            "Sentiment analysis is not available in this environment."
         )
         return None, None, None
 
@@ -161,11 +161,11 @@ def predict_user_reviews(
     try:
         data = pd.read_csv(uploaded_file)
     except Exception as e:
-        st.error(f"Erreur lors de la lecture du fichier CSV : {e}")
+        st.error(f"Error reading CSV file: {e}")
         return None, None, None
 
     if "user_review" not in data.columns:
-        st.warning("Le fichier CSV doit contenir une colonne 'user_review'.")
+        st.warning("The CSV file must contain a 'user_review' column.")
         return None, None, None
 
     try:
@@ -173,7 +173,7 @@ def predict_user_reviews(
         reviews = data["user_review"].astype(str).tolist()
 
         if not reviews:
-            st.warning("Aucun avis valide trouve dans le fichier.")
+            st.warning("No valid reviews found in the file.")
             return None, None, None
 
         if granularity == "5-star":
@@ -181,7 +181,7 @@ def predict_user_reviews(
         return _predict_binary(data, reviews)
 
     except Exception as e:
-        st.error(f"Erreur lors de l'analyse des avis : {e}")
+        st.error(f"Error analyzing reviews: {e}")
         return None, None, None
 
 
@@ -208,7 +208,7 @@ def _predict_star(data: pd.DataFrame, reviews: list[str]) -> tuple[pd.DataFrame,
     data["stars"] = [int(r["label"][0]) for r in results]
     data["confidence"] = [r["score"] for r in results]
     data["sentiment"] = data["stars"].map(
-        {1: "Tres negatif", 2: "Negatif", 3: "Neutre", 4: "Positif", 5: "Tres positif"}
+        {1: "Very Negative", 2: "Negative", 3: "Neutral", 4: "Positive", 5: "Very Positive"}
     )
 
     avg_stars = data["stars"].mean()
@@ -226,8 +226,8 @@ def analyze_aspects(reviews: list[str]) -> dict[str, dict[str, int]]:
     """
     if not _HAS_TRANSFORMERS:
         st.warning(
-            "La bibliotheque `transformers` n'est pas installee. "
-            "L'analyse par aspect n'est pas disponible dans cet environnement."
+            "The `transformers` library is not installed. "
+            "Aspect-based analysis is not available in this environment."
         )
         return {}
 

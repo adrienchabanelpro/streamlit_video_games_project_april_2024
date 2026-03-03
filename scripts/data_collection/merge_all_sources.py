@@ -1,12 +1,19 @@
 """Merge all data sources into a unified v3 dataset.
 
-Sources: VGChartz (physical sales), SteamSpy (digital/PC), RAWG (metadata),
-IGDB (themes/modes/franchise), HLTB (completion times).
+Sources (9):
+- VGChartz (physical sales) — base/target variable
+- SteamSpy (digital/PC owner estimates, reviews, playtime)
+- RAWG (metadata: ratings, tags, genres, platforms)
+- IGDB (themes, modes, franchises, perspectives)
+- HLTB (completion times)
+- Wikipedia (verified official sales figures)
+- Steam Store (pricing, DLC, categories, review counts)
+- OpenCritic (aggregated critic scores from 100+ outlets)
+- Gamedatacrunch (revenue estimates, CCU, regional pricing)
 
 Matching strategy:
-1. RAWG as canonical registry (normalized names)
-2. Exact match first, fuzzy match second (rapidfuzz WRatio >= 85)
-3. Per-source match scores preserved for quality auditing
+1. Exact match first, fuzzy match second (rapidfuzz WRatio >= 85)
+2. Per-source match scores preserved for quality auditing
 
 Output: data/Ventes_jeux_video_v3.csv
 """
@@ -23,13 +30,19 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = PROJECT_ROOT / "data"
 RAW_DIR = DATA_DIR / "raw"
 
-# Input paths
+# Input paths — original 5 sources
 VGCHARTZ_PATH = RAW_DIR / "vgchartz_2024.csv"
 STEAMSPY_PATH = RAW_DIR / "steamspy_all.csv"
 RAWG_PATH = RAW_DIR / "rawg_all.csv"
 IGDB_PATH = RAW_DIR / "igdb_all.csv"
 HLTB_PATH = RAW_DIR / "hltb_all.csv"
 SCORES_PATH = DATA_DIR / "vgchartz_scores.csv"
+
+# Input paths — new 4 sources
+WIKIPEDIA_PATH = RAW_DIR / "wikipedia_sales.csv"
+STEAM_STORE_PATH = RAW_DIR / "steam_store.csv"
+OPENCRITIC_PATH = RAW_DIR / "opencritic.csv"
+GAMEDATACRUNCH_PATH = RAW_DIR / "gamedatacrunch.csv"
 
 # Output
 OUTPUT_PATH = DATA_DIR / "Ventes_jeux_video_v3.csv"
@@ -262,7 +275,150 @@ def merge_all_sources(
         print("[merge-v3] HLTB data not found — skipping")
 
     # ------------------------------------------------------------------
-    # 6. Merge VGChartz scores enrichment
+    # 6. Merge Wikipedia (verified official sales figures)
+    # ------------------------------------------------------------------
+    if WIKIPEDIA_PATH.exists():
+        wiki = pd.read_csv(WIKIPEDIA_PATH)
+        print(f"[merge-v3] Wikipedia: {len(wiki):,} rows")
+
+        wiki_lookup = _build_lookup(wiki["wiki_name"])
+        wiki_matches = _fuzzy_match_col(
+            vg["Name"], wiki_lookup, threshold=match_threshold, label="wiki"
+        )
+
+        wiki_cols = [
+            "wiki_sales_millions", "wiki_platform", "wiki_publisher",
+            "wiki_developer", "wiki_release_date", "wiki_source_page",
+            "wiki_sales_type",
+        ]
+        for col in wiki_cols:
+            vg[col] = float("nan") if col == "wiki_sales_millions" else ""
+        vg["wiki_match_score"] = float("nan")
+
+        for vg_idx, (wiki_idx, score) in wiki_matches.items():
+            for col in wiki_cols:
+                if col in wiki.columns:
+                    vg.at[vg_idx, col] = wiki.at[wiki_idx, col]
+            vg.at[vg_idx, "wiki_match_score"] = score
+
+        print(f"[merge-v3] Wikipedia: {len(wiki_matches):,} total matches")
+    else:
+        print("[merge-v3] Wikipedia data not found — skipping")
+
+    # ------------------------------------------------------------------
+    # 7. Merge Steam Store (pricing, DLC, categories, reviews)
+    # ------------------------------------------------------------------
+    if STEAM_STORE_PATH.exists():
+        sstore = pd.read_csv(STEAM_STORE_PATH)
+        print(f"[merge-v3] Steam Store: {len(sstore):,} rows")
+
+        sstore_lookup = _build_lookup(sstore["steam_store_name"])
+        sstore_matches = _fuzzy_match_col(
+            vg["Name"], sstore_lookup, threshold=match_threshold, label="steam_store"
+        )
+
+        # Map source columns to target columns (rename steam_appid to avoid
+        # collision with SteamSpy's steam_appid column)
+        sstore_col_map = {
+            "steam_appid": "steam_store_appid",
+            "steam_store_price_usd": "steam_store_price_usd",
+            "steam_store_is_free": "steam_store_is_free",
+            "steam_store_release_date": "steam_store_release_date",
+            "steam_store_coming_soon": "steam_store_coming_soon",
+            "steam_store_recommendations": "steam_store_recommendations",
+            "steam_store_categories": "steam_store_categories",
+            "steam_store_genres": "steam_store_genres",
+            "steam_store_dlc_count": "steam_store_dlc_count",
+            "steam_store_metacritic": "steam_store_metacritic",
+            "steam_store_platforms_win": "steam_store_platforms_win",
+            "steam_store_platforms_mac": "steam_store_platforms_mac",
+            "steam_store_platforms_linux": "steam_store_platforms_linux",
+            "steam_store_developer": "steam_store_developer",
+            "steam_store_publisher": "steam_store_publisher",
+        }
+        str_cols = {"steam_store_categories", "steam_store_genres", "steam_store_developer", "steam_store_publisher", "steam_store_release_date"}
+        for target in sstore_col_map.values():
+            vg[target] = "" if target in str_cols else float("nan")
+        vg["steam_store_match_score"] = float("nan")
+
+        for vg_idx, (sstore_idx, score) in sstore_matches.items():
+            for src_col, tgt_col in sstore_col_map.items():
+                if src_col in sstore.columns:
+                    vg.at[vg_idx, tgt_col] = sstore.at[sstore_idx, src_col]
+            vg.at[vg_idx, "steam_store_match_score"] = score
+
+        print(f"[merge-v3] Steam Store: {len(sstore_matches):,} total matches")
+    else:
+        print("[merge-v3] Steam Store data not found — skipping")
+
+    # ------------------------------------------------------------------
+    # 8. Merge OpenCritic (aggregated critic scores)
+    # ------------------------------------------------------------------
+    if OPENCRITIC_PATH.exists():
+        oc = pd.read_csv(OPENCRITIC_PATH)
+        print(f"[merge-v3] OpenCritic: {len(oc):,} rows")
+
+        oc_lookup = _build_lookup(oc["oc_name"])
+        oc_matches = _fuzzy_match_col(
+            vg["Name"], oc_lookup, threshold=match_threshold, label="opencritic"
+        )
+
+        oc_cols = [
+            "oc_id", "oc_top_critic_score", "oc_percent_recommended",
+            "oc_num_reviews", "oc_num_top_critic_reviews", "oc_tier",
+            "oc_first_release_date",
+        ]
+        for col in oc_cols:
+            vg[col] = float("nan") if col not in ("oc_tier", "oc_first_release_date") else ""
+        vg["oc_match_score"] = float("nan")
+
+        for vg_idx, (oc_idx, score) in oc_matches.items():
+            for col in oc_cols:
+                if col in oc.columns:
+                    vg.at[vg_idx, col] = oc.at[oc_idx, col]
+            vg.at[vg_idx, "oc_match_score"] = score
+
+        print(f"[merge-v3] OpenCritic: {len(oc_matches):,} total matches")
+    else:
+        print("[merge-v3] OpenCritic data not found — skipping")
+
+    # ------------------------------------------------------------------
+    # 9. Merge Gamedatacrunch (revenue estimates, CCU, pricing)
+    # ------------------------------------------------------------------
+    if GAMEDATACRUNCH_PATH.exists():
+        gdc = pd.read_csv(GAMEDATACRUNCH_PATH)
+        print(f"[merge-v3] Gamedatacrunch: {len(gdc):,} rows")
+
+        gdc_lookup = _build_lookup(gdc["gdc_name"])
+        gdc_matches = _fuzzy_match_col(
+            vg["Name"], gdc_lookup, threshold=match_threshold, label="gdc"
+        )
+
+        gdc_cols = [
+            "gdc_appid", "gdc_revenue_estimate", "gdc_owners_estimate",
+            "gdc_ccu_max", "gdc_price_usd", "gdc_review_score",
+            "gdc_review_count", "gdc_release_date",
+            "gdc_developer", "gdc_publisher", "gdc_tags", "gdc_genres",
+        ]
+        for col in gdc_cols:
+            if col in ("gdc_developer", "gdc_publisher", "gdc_tags", "gdc_genres", "gdc_release_date"):
+                vg[col] = ""
+            else:
+                vg[col] = float("nan")
+        vg["gdc_match_score"] = float("nan")
+
+        for vg_idx, (gdc_idx, score) in gdc_matches.items():
+            for col in gdc_cols:
+                if col in gdc.columns:
+                    vg.at[vg_idx, col] = gdc.at[gdc_idx, col]
+            vg.at[vg_idx, "gdc_match_score"] = score
+
+        print(f"[merge-v3] Gamedatacrunch: {len(gdc_matches):,} total matches")
+    else:
+        print("[merge-v3] Gamedatacrunch data not found — skipping")
+
+    # ------------------------------------------------------------------
+    # 10. Merge VGChartz scores enrichment
     # ------------------------------------------------------------------
     if SCORES_PATH.exists():
         scores = pd.read_csv(SCORES_PATH)
@@ -277,7 +433,7 @@ def merge_all_sources(
         print("[merge-v3] VGChartz scores not found — skipping")
 
     # ------------------------------------------------------------------
-    # 7. Derive additional columns
+    # 11. Derive additional columns
     # ------------------------------------------------------------------
     # Cross-platform count
     if "Name" in vg.columns:
@@ -321,7 +477,31 @@ def merge_all_sources(
         )
 
     # ------------------------------------------------------------------
-    # 8. Clean up and save
+    # 12. Derive columns from new sources
+    # ------------------------------------------------------------------
+    # Verified digital sales from Wikipedia (highest reliability tier)
+    if "wiki_sales_millions" in vg.columns:
+        vg["has_verified_sales"] = vg["wiki_sales_millions"].notna().astype(int)
+
+    # Revenue estimate from Gamedatacrunch
+    if "gdc_revenue_estimate" in vg.columns:
+        vg["has_revenue_estimate"] = vg["gdc_revenue_estimate"].notna().astype(int)
+
+    # Critic consensus score: prefer OpenCritic, fallback to Steam Store metacritic
+    if "oc_top_critic_score" in vg.columns:
+        vg["critic_score_combined"] = vg["oc_top_critic_score"]
+        if "steam_store_metacritic" in vg.columns:
+            mask = vg["critic_score_combined"].isna()
+            vg.loc[mask, "critic_score_combined"] = vg.loc[mask, "steam_store_metacritic"]
+
+    # DLC availability from Steam Store
+    if "steam_store_dlc_count" in vg.columns:
+        vg["has_dlc"] = (
+            pd.to_numeric(vg["steam_store_dlc_count"], errors="coerce").fillna(0) > 0
+        ).astype(int)
+
+    # ------------------------------------------------------------------
+    # 13. Clean up and save
     # ------------------------------------------------------------------
     # Drop internal columns
     vg = vg.drop(columns=["_norm_name"], errors="ignore")
@@ -352,6 +532,10 @@ def _print_summary(df: pd.DataFrame) -> None:
         ("RAWG", "rawg_match_score"),
         ("IGDB", "igdb_match_score"),
         ("HLTB", "hltb_match_score"),
+        ("Wikipedia", "wiki_match_score"),
+        ("Steam Store", "steam_store_match_score"),
+        ("OpenCritic", "oc_match_score"),
+        ("Gamedatacrunch", "gdc_match_score"),
     ]:
         if col in df.columns:
             matched = df[col].notna().sum()

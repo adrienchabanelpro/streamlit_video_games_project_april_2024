@@ -8,18 +8,18 @@ from ml.predict import NUMERICAL_FEATURES, get_features, is_log_transformed, pre
 
 def _get_input(train_stats: dict) -> tuple[str, str, str, dict]:
     """Render sidebar inputs and return user selections."""
-    st.sidebar.header("Selection des entrees")
+    st.sidebar.header("Input Selection")
 
     input_data: dict = {}
-    publisher_input = st.sidebar.selectbox("Selectionnez l'editeur", train_stats["publishers"])
-    genre_input = st.sidebar.selectbox("Selectionnez le genre", train_stats["genres"])
-    platform_input = st.sidebar.selectbox("Selectionnez la plateforme", train_stats["platforms"])
+    publisher_input = st.sidebar.selectbox("Select Publisher", train_stats["publishers"])
+    genre_input = st.sidebar.selectbox("Select Genre", train_stats["genres"])
+    platform_input = st.sidebar.selectbox("Select Platform", train_stats["platforms"])
     years = list(range(1970, 2031))
-    year_input = st.sidebar.selectbox("Selectionnez l'annee", years, index=years.index(2024))
+    year_input = st.sidebar.selectbox("Select Release Year", years, index=years.index(2024))
     input_data["Year"] = year_input
 
     meta_input = st.sidebar.number_input(
-        "Selectionnez le score Metacritic",
+        "Select Metacritic Score",
         min_value=0.0,
         max_value=10.0,
         value=train_stats["meta_score_mean"],
@@ -28,7 +28,7 @@ def _get_input(train_stats: dict) -> tuple[str, str, str, dict]:
     input_data["meta_score"] = meta_input
 
     user_input = st.sidebar.number_input(
-        "Selectionnez le score utilisateur",
+        "Select User Score",
         min_value=0.0,
         max_value=10.0,
         value=train_stats["user_review_mean"],
@@ -43,23 +43,23 @@ def prediction_page() -> None:
     """Render the prediction page."""
     from prediction import load_feature_means, load_models
 
-    st.title("Prediction des ventes de jeux video")
+    st.title("Video Game Sales Prediction")
     st.caption(
-        "Estimez les ventes mondiales d'un jeu video a l'aide de notre ensemble de modeles"
+        "Estimate global sales of a video game using our model ensemble"
     )
 
     try:
         lgb_model, xgb_model, cb_model = load_models()
         train_stats = load_feature_means()
     except Exception as e:
-        st.error(f"Erreur lors du chargement du modele : {e}")
+        st.error(f"Error loading model: {e}")
         return
 
     # User inputs
     publisher_input, genre_input, platform_input, input_data = _get_input(train_stats)
 
-    if st.sidebar.button("Predire"):
-        with st.spinner("Calcul de la prediction..."):
+    if st.sidebar.button("Predict"):
+        with st.spinner("Computing prediction..."):
             try:
                 df_input = get_features(input_data, train_stats, genre_input, platform_input)
                 df_ready = prepare_for_prediction(df_input, publisher_input)
@@ -74,11 +74,11 @@ def prediction_page() -> None:
 
                 col1, col2, col3 = st.columns(3)
                 with col1:
-                    st.metric("Ventes predites", f"{user_pred[0]:.4f} M")
+                    st.metric("Predicted Sales", f"{user_pred[0]:.4f} M")
                 with col2:
                     st.metric("Genre", genre_input)
                 with col3:
-                    st.metric("Plateforme", platform_input)
+                    st.metric("Platform", platform_input)
 
                 export_df = pd.DataFrame(
                     {
@@ -92,36 +92,36 @@ def prediction_page() -> None:
                     }
                 )
                 st.download_button(
-                    "Telecharger la prediction (CSV)",
+                    "Download Prediction (CSV)",
                     export_df.to_csv(index=False),
                     file_name="prediction.csv",
                     mime="text/csv",
                 )
             except Exception as e:
-                st.error(f"Erreur lors de la prediction : {e}")
+                st.error(f"Error during prediction: {e}")
     else:
         st.info(
-            "Entrez les informations necessaires dans la barre laterale "
-            "et cliquez sur 'Predire' pour estimer les ventes globales."
+            "Enter the required information in the sidebar "
+            "and click 'Predict' to estimate global sales."
         )
 
     # --- Batch prediction ---
     st.markdown("---")
-    st.subheader("Prediction par lot")
+    st.subheader("Batch Prediction")
     st.write(
-        "Telechargez un fichier CSV avec les colonnes : "
+        "Upload a CSV file with the following columns: "
         "`Publisher`, `Genre`, `Platform`, `Year`, `meta_score`, `user_review`"
     )
-    batch_file = st.file_uploader("Fichier CSV", type="csv", key="batch")
+    batch_file = st.file_uploader("CSV File", type="csv", key="batch")
 
-    if batch_file is not None and st.button("Predire le lot"):
-        with st.spinner("Predictions en cours..."):
+    if batch_file is not None and st.button("Predict Batch"):
+        with st.spinner("Running predictions..."):
             try:
                 batch_df = pd.read_csv(batch_file)
                 required = ["Publisher", "Genre", "Platform", "Year", "meta_score", "user_review"]
                 missing = [c for c in required if c not in batch_df.columns]
                 if missing:
-                    st.error(f"Colonnes manquantes : {', '.join(missing)}")
+                    st.error(f"Missing columns: {', '.join(missing)}")
                 else:
                     results = []
                     for _, row in batch_df.iterrows():
@@ -145,18 +145,18 @@ def prediction_page() -> None:
                     batch_df["Predicted_Sales_M"] = results
                     st.dataframe(batch_df, use_container_width=True, hide_index=True)
                     st.download_button(
-                        "Telecharger les resultats (CSV)",
+                        "Download Results (CSV)",
                         batch_df.to_csv(index=False),
                         file_name="batch_predictions.csv",
                         mime="text/csv",
                     )
             except Exception as e:
-                st.error(f"Erreur lors de la prediction par lot : {e}")
+                st.error(f"Error during batch prediction: {e}")
 
     st.markdown("---")
     st.markdown(
         "<p style='text-align: center; color: #94A3B8;'>"
-        "Ce modele est en version beta et peut faire des erreurs. "
-        "Envisagez de verifier les informations importantes.</p>",
+        "This model is in beta and may make errors. "
+        "Consider verifying important information.</p>",
         unsafe_allow_html=True,
     )

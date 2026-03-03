@@ -22,13 +22,7 @@ format: ## Run ruff formatter
 	ruff format source/ scripts/ tests/
 
 train: ## Run model training pipeline
-	python scripts/train_model.py
-
-dvc-repro: ## Reproduce DVC pipeline (train + track outputs)
-	dvc repro
-
-mlflow: ## Launch MLflow UI
-	mlflow ui --port 5000
+	python -m scripts.training.run_training
 
 collect-data: ## Run data collection pipeline (Kaggle + SteamSpy + merge)
 	python -m scripts.data_collection.run_pipeline

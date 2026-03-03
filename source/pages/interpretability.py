@@ -29,8 +29,8 @@ def _load_dataset() -> pd.DataFrame:
 
 def interpretability_page() -> None:
     """Render the model interpretability page."""
-    st.title("Interpretabilite des Modeles")
-    st.caption("Comprendre pourquoi le modele fait ses predictions : SHAP, importance des variables")
+    st.title("Model Interpretability")
+    st.caption("Understanding why the model makes its predictions: SHAP, feature importance")
 
     log = _load_training_log()
 
@@ -38,12 +38,12 @@ def interpretability_page() -> None:
     section_header("SHAP (SHapley Additive exPlanations)")
 
     info_card(
-        "Qu'est-ce que SHAP ?",
+        "What is SHAP?",
         """
-        SHAP attribue a chaque variable une <b>contribution marginale</b> a la prediction.
-        Contrairement a l'importance classique (basee sur le gain), SHAP fournit des
-        explications <b>consistantes et locales</b> : on peut expliquer chaque prediction
-        individuellement, pas seulement le modele global.
+        SHAP assigns each feature a <b>marginal contribution</b> to the prediction.
+        Unlike classical importance (based on gain), SHAP provides
+        <b>consistent and local</b> explanations: each prediction can be explained
+        individually, not just the model as a whole.
         """,
     )
 
@@ -55,30 +55,30 @@ def interpretability_page() -> None:
         shap_summary = REPORTS_DIR / "shap_summary.png"
 
     if shap_bar.exists() or shap_summary.exists():
-        tab1, tab2 = st.tabs(["Importance globale (bar)", "Distribution (beeswarm)"])
+        tab1, tab2 = st.tabs(["Global Importance (Bar)", "Distribution (Beeswarm)"])
         with tab1:
             if shap_bar.exists():
                 st.image(str(shap_bar), use_container_width=True)
                 st.caption(
-                    "Chaque barre represente la contribution moyenne absolue "
-                    "de la variable aux predictions. Plus la barre est longue, "
-                    "plus la variable est importante."
+                    "Each bar represents the mean absolute contribution "
+                    "of the feature to predictions. The longer the bar, "
+                    "the more important the feature."
                 )
         with tab2:
             if shap_summary.exists():
                 st.image(str(shap_summary), use_container_width=True)
                 st.caption(
-                    "Chaque point represente un jeu. La couleur indique la valeur "
-                    "de la variable (rouge = haute, bleu = basse). La position "
-                    "horizontale montre l'impact sur la prediction."
+                    "Each dot represents a game. The color indicates the feature "
+                    "value (red = high, blue = low). The horizontal position "
+                    "shows the impact on the prediction."
                 )
     else:
-        st.info("Les plots SHAP seront generes apres l'entrainement (`make train`).")
+        st.info("SHAP plots will be generated after training (`make train`).")
 
     st.divider()
 
     # Feature descriptions
-    section_header("Description des variables", "Que mesure chaque feature et pourquoi elle est utile")
+    section_header("Feature Descriptions", "What each feature measures and why it is useful")
 
     if log:
         features = log.get("features", [])
@@ -87,32 +87,32 @@ def interpretability_page() -> None:
             rows = []
             for f in features:
                 rows.append({
-                    "Variable": f,
+                    "Feature": f,
                     "Description": feature_desc.get(f, "—"),
-                    "Categorie": _categorize_feature(f),
+                    "Category": _categorize_feature(f),
                 })
             df_features = pd.DataFrame(rows)
 
             # Group by category
-            for cat in df_features["Categorie"].unique():
-                with st.expander(f"**{cat}** ({len(df_features[df_features['Categorie'] == cat])} variables)"):
-                    subset = df_features[df_features["Categorie"] == cat][["Variable", "Description"]]
+            for cat in df_features["Category"].unique():
+                with st.expander(f"**{cat}** ({len(df_features[df_features['Category'] == cat])} features)"):
+                    subset = df_features[df_features["Category"] == cat][["Feature", "Description"]]
                     st.dataframe(subset, use_container_width=True, hide_index=True)
 
     st.divider()
 
     # Methodology explanation
-    section_header("Methodologie d'interpretabilite")
+    section_header("Interpretability Methodology")
 
     info_card(
-        "Approche multi-niveaux",
+        "Multi-Level Approach",
         """
-        <b>1. SHAP TreeExplainer</b> — Calcul exact des valeurs SHAP pour les modeles
-        a base d'arbres (LightGBM, XGBoost, CatBoost). Complexite O(TLD²).<br><br>
-        <b>2. Importance par permutation</b> — Mesure la degradation de performance quand
-        on melange aleatoirement une variable. Independant du modele.<br><br>
-        <b>3. Analyse des residus</b> — Verification que les erreurs sont aleatoires et
-        non systematiques (pas de biais structurel).
+        <b>1. SHAP TreeExplainer</b> — Exact computation of SHAP values for tree-based
+        models (LightGBM, XGBoost, CatBoost). Complexity O(TLD²).<br><br>
+        <b>2. Permutation Importance</b> — Measures performance degradation when
+        a feature is randomly shuffled. Model-agnostic.<br><br>
+        <b>3. Residual Analysis</b> — Verifies that errors are random and
+        not systematic (no structural bias).
         """,
     )
 
@@ -120,74 +120,74 @@ def interpretability_page() -> None:
 def _get_feature_descriptions() -> dict[str, str]:
     """Return human-readable descriptions for known features."""
     return {
-        "Year": "Annee de sortie du jeu",
-        "meta_score": "Score Metacritic (critique professionnelle)",
-        "user_review": "Score des utilisateurs",
-        "Global_Sales_mean_genre": "Ventes moyennes des jeux du meme genre (donnees d'entrainement)",
-        "Global_Sales_mean_platform": "Ventes moyennes des jeux de la meme plateforme",
-        "Year_Global_Sales_mean_genre": "Interaction : Annee × ventes moyennes du genre",
-        "Year_Global_Sales_mean_platform": "Interaction : Annee × ventes moyennes de la plateforme",
-        "Cumulative_Sales_Genre": "Ventes cumulees du genre jusqu'a l'annee de sortie",
-        "Cumulative_Sales_Platform": "Ventes cumulees de la plateforme jusqu'a l'annee de sortie",
-        "Publisher_encoded": "Editeur encode par target encoding (ventes moyennes de l'editeur)",
-        "publisher_avg_sales_prior": "Ventes moyennes des jeux precedents de l'editeur",
-        "publisher_game_count_prior": "Nombre de jeux precedents de l'editeur",
-        "publisher_hit_rate": "Pourcentage de hits de l'editeur (ventes > mediane)",
-        "developer_avg_sales_prior": "Ventes moyennes des jeux precedents du developpeur",
-        "competition_density": "Nombre de jeux sortis la meme annee",
-        "genre_market_share": "Part de marche du genre l'annee de sortie",
-        "review_count_total": "Nombre total d'avis Steam (positifs + negatifs)",
-        "review_ratio": "Ratio d'avis positifs sur Steam",
-        "playtime_avg": "Temps de jeu moyen sur Steam (minutes)",
-        "concurrent_users": "Pic de joueurs simultanes sur Steam",
-        "rawg_playtime": "Temps de jeu moyen estime (RAWG)",
-        "rawg_ratings_count": "Nombre de notes communautaires RAWG",
-        "rawg_rating": "Note communautaire RAWG (0-5)",
-        "rawg_metacritic": "Score Metacritic via RAWG (0-100)",
-        "hltb_main": "Temps pour finir l'histoire principale (heures)",
-        "hltb_main_extra": "Temps histoire + extras (heures)",
-        "hltb_completionist": "Temps pour le 100% (heures)",
-        "hltb_depth_ratio": "Ratio completionniste / histoire (profondeur)",
-        "release_month": "Mois de sortie (1-12)",
-        "release_quarter": "Trimestre de sortie (1-4)",
-        "is_holiday_release": "Sortie pendant la periode des fetes (oct-dec)",
-        "cross_platform_count": "Nombre de plateformes supportees",
-        "is_multi_platform": "Jeu multi-plateforme (oui/non)",
-        "esrb_encoded": "Classification d'age ESRB (ordinal)",
-        "has_franchise": "Appartient a une franchise connue",
-        "is_remake": "Est un remake",
-        "is_remaster": "Est un remaster",
-        "igdb_total_rating": "Note globale IGDB (0-100)",
-        "igdb_hypes": "Score de hype pre-sortie (IGDB)",
-        "igdb_follows": "Nombre de followers du jeu (IGDB)",
-        "steam_price": "Prix actuel sur Steam",
-        "steam_initialprice": "Prix de lancement sur Steam",
-        "steam_review_pct": "Pourcentage d'avis positifs Steam",
+        "Year": "Game release year",
+        "meta_score": "Metacritic score (professional critics)",
+        "user_review": "User review score",
+        "Global_Sales_mean_genre": "Average sales of games in the same genre (training data)",
+        "Global_Sales_mean_platform": "Average sales of games on the same platform",
+        "Year_Global_Sales_mean_genre": "Interaction: Year x average genre sales",
+        "Year_Global_Sales_mean_platform": "Interaction: Year x average platform sales",
+        "Cumulative_Sales_Genre": "Cumulative genre sales up to the release year",
+        "Cumulative_Sales_Platform": "Cumulative platform sales up to the release year",
+        "Publisher_encoded": "Publisher encoded via target encoding (publisher average sales)",
+        "publisher_avg_sales_prior": "Average sales of the publisher's previous games",
+        "publisher_game_count_prior": "Number of the publisher's previous games",
+        "publisher_hit_rate": "Publisher hit rate (sales > median)",
+        "developer_avg_sales_prior": "Average sales of the developer's previous games",
+        "competition_density": "Number of games released the same year",
+        "genre_market_share": "Genre market share in the release year",
+        "review_count_total": "Total number of Steam reviews (positive + negative)",
+        "review_ratio": "Ratio of positive Steam reviews",
+        "playtime_avg": "Average playtime on Steam (minutes)",
+        "concurrent_users": "Peak concurrent players on Steam",
+        "rawg_playtime": "Estimated average playtime (RAWG)",
+        "rawg_ratings_count": "Number of RAWG community ratings",
+        "rawg_rating": "RAWG community rating (0-5)",
+        "rawg_metacritic": "Metacritic score via RAWG (0-100)",
+        "hltb_main": "Time to finish the main story (hours)",
+        "hltb_main_extra": "Main story + extras time (hours)",
+        "hltb_completionist": "Time for 100% completion (hours)",
+        "hltb_depth_ratio": "Completionist / main story ratio (depth)",
+        "release_month": "Release month (1-12)",
+        "release_quarter": "Release quarter (1-4)",
+        "is_holiday_release": "Released during the holiday season (Oct-Dec)",
+        "cross_platform_count": "Number of supported platforms",
+        "is_multi_platform": "Cross-platform game (yes/no)",
+        "esrb_encoded": "ESRB age rating (ordinal)",
+        "has_franchise": "Belongs to a known franchise",
+        "is_remake": "Is a remake",
+        "is_remaster": "Is a remaster",
+        "igdb_total_rating": "IGDB overall rating (0-100)",
+        "igdb_hypes": "Pre-release hype score (IGDB)",
+        "igdb_follows": "Number of game followers (IGDB)",
+        "steam_price": "Current Steam price",
+        "steam_initialprice": "Launch price on Steam",
+        "steam_review_pct": "Percentage of positive Steam reviews",
     }
 
 
 def _categorize_feature(name: str) -> str:
     """Categorize a feature by its type."""
     if name in ("Year", "release_month", "release_quarter", "is_holiday_release"):
-        return "Temporel"
+        return "Temporal"
     if "publisher" in name or "developer" in name or "Publisher" in name:
-        return "Track record editeur/dev"
+        return "Publisher/Developer Track Record"
     if name.startswith(("Global_Sales_mean", "Year_Global_Sales", "Cumulative")):
-        return "Historique genre/plateforme"
+        return "Genre/Platform History"
     if name.startswith(("review_", "playtime", "concurrent", "steam_review_pct")):
-        return "Engagement Steam"
+        return "Steam Engagement"
     if name.startswith("rawg_"):
-        return "Metadonnees RAWG"
+        return "RAWG Metadata"
     if name.startswith("hltb_"):
-        return "Temps de completion (HLTB)"
+        return "Completion Time (HLTB)"
     if name.startswith(("cross_platform", "is_multi")):
-        return "Multi-plateforme"
+        return "Cross-Platform"
     if name.startswith(("esrb", "has_franchise", "is_remake", "is_remaster")):
-        return "Caracteristiques du jeu"
+        return "Game Characteristics"
     if name.startswith("igdb_"):
         return "IGDB"
     if name.startswith("steam_") and "price" in name:
-        return "Prix"
+        return "Price"
     if name in ("meta_score", "user_review"):
-        return "Scores critiques"
-    return "Autre"
+        return "Critic Scores"
+    return "Other"

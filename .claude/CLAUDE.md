@@ -3,7 +3,7 @@
 ## Quick Reference
 
 - **Run:** `streamlit run source/main.py` → http://localhost:8501
-- **Language:** UI in French, docs in English, code mixed
+- **Language:** All English (UI, docs, code)
 - **Python:** 3.11+ required
 
 ## Architecture
@@ -14,29 +14,29 @@
 - `source/components.py` — Shared UI components (metric_card, info_card, etc.)
 - `source/pages/` — 11 Streamlit page modules
 - `source/ml/predict.py` — Inference pipeline (loads models + transformers)
-- `source/analyse_avis_utilisateurs.py` — NLP sentiment analysis
+- `source/sentiment_analysis.py` — NLP sentiment analysis (DistilBERT + BERT multilingual)
 - `scripts/training/` — Modular v3 training pipeline (data_prep, models, stacking, evaluation)
-- `scripts/data_collection/` — 5-source collection (RAWG, IGDB, HLTB, SteamSpy, Kaggle) + merge
+- `scripts/data_collection/` — Multi-source collection (RAWG, IGDB, HLTB, SteamSpy, Kaggle, Wikipedia, Steam Store, OpenCritic, Gamedatacrunch) + merge
 
 ## Pages (11)
 
 | Page | File | Content |
 |------|------|---------|
-| Accueil | `home.py` | Dashboard overview, key metrics, pipeline diagram |
-| Sources de Donnees | `data_sources.py` | 5 sources documented, merge methodology, schema |
-| Analyse Exploratoire | `dataviz.py` | Interactive Plotly charts with global filters |
+| Home | `home.py` | Dashboard overview, key metrics, pipeline diagram |
+| Data Sources | `data_sources.py` | Sources documented, merge methodology, schema |
+| Exploratory Analysis | `dataviz.py` | Interactive Plotly charts with global filters |
 | Feature Engineering | `feature_engineering.py` | Feature explanations |
-| Entrainement | `model_training.py` | Model comparison, stacking architecture, SHAP |
+| Training | `model_training.py` | Model comparison, stacking architecture, SHAP |
 | Predictions | `prediction.py` | Single + batch prediction UI |
-| Interpretabilite | `interpretability.py` | SHAP beeswarm, feature descriptions |
+| Interpretability | `interpretability.py` | SHAP beeswarm, feature descriptions |
 | What-If | `what_if.py` | Interactive variable sweep analysis |
-| Tendances | `market_insights.py` | Genre/platform/publisher analytics |
+| Market Trends | `market_insights.py` | Genre/platform/publisher analytics |
 | Sentiment NLP | `perception.py` | DistilBERT sentiment analysis |
-| A Propos | `about.py` | Methodology, tech stack, limitations |
+| About | `about.py` | Methodology, tech stack, limitations |
 
 ## Data & Models
 
-- `data/Ventes_jeux_video_v3.csv` — Unified dataset (5 sources merged)
+- `data/Ventes_jeux_video_v3.csv` — Unified dataset (multi-source merged)
 - `data/Ventes_jeux_video_final.csv` — v2 fallback (64K rows, VGChartz + SteamSpy)
 - `models/model_v3_*.{txt,json,cbm,joblib}` — v3 stacking ensemble (5 base + meta-learner)
 - `models/model_v2_*.{txt,json,cbm}` — v2 models (LGB + XGB + CB average)

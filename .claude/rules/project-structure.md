@@ -4,10 +4,8 @@
 All app code lives in `source/`. Data in `data/`. Models in `models/` and `reports/`.
 
 ## When Adding New Pages
-1. Create `source/<page_name>.py` with a main display function
-2. Import it in `source/main.py`
-3. Add the page name to the sidebar radio options list
-4. Add the routing condition in the if/elif chain
+1. Create `source/pages/<page_name>.py` with a `<page_name>_page()` function
+2. Add a `st.Page(_lazy("pages.<page_name>", "<page_name>_page"), ...)` entry in `source/main.py`'s `st.navigation()` list
 
 ## When Adding New Models
 1. Save trained models to `models/` (sklearn: `.pkl` or `.joblib`, LightGBM: `.txt`)
@@ -19,7 +17,12 @@ All app code lives in `source/`. Data in `data/`. Models in `models/` and `repor
 2. Document schema and row count in root `CLAUDE.md`
 3. Add data loading with `@st.cache_data`
 
+## When Adding New Data Sources
+1. Create `scripts/data_collection/collect_<source_name>.py`
+2. Add the source to `scripts/data_collection/run_pipeline.py`
+3. Update `scripts/data_collection/merge_all_sources.py` with merge logic
+4. Document the source in `source/pages/data_sources.py`
+
 ## Assets
 - Images → `images/`
-- Fonts → `fonts/`
 - Keep image sizes reasonable (<500KB preferred, compress large ones)

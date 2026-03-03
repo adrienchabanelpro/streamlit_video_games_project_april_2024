@@ -16,8 +16,8 @@ def _load_dataviz_data() -> pd.DataFrame:
     is_valid, errors = validate_dataframe(df)
     if not is_valid:
         st.warning(
-            f"Validation des donnees : {len(errors)} probleme(s) detecte(s). "
-            "Les visualisations peuvent etre affectees."
+            f"Data validation: {len(errors)} issue(s) detected. "
+            "Visualizations may be affected."
         )
     # Only drop rows missing critical viz columns (not steam_* which are mostly NaN)
     df = df.dropna(subset=["Year", "Genre", "Platform", "Publisher", "Global_Sales"])
@@ -31,32 +31,32 @@ def _load_dataviz_data() -> pd.DataFrame:
 
 def dataviz_page() -> None:
     """Render the DataViz page with interactive filtered charts."""
-    with st.spinner("Chargement des visualisations..."):
+    with st.spinner("Loading visualizations..."):
         df = _load_dataviz_data()
 
-    st.title("Page de DataViz")
+    st.title("DataViz Page")
 
     # ------------------------------------------------------------------
     # Global filters
     # ------------------------------------------------------------------
-    st.subheader("Filtres")
-    with st.expander("Filtrer les donnees", expanded=True):
+    st.subheader("Filters")
+    with st.expander("Filter data", expanded=True):
         col_f1, col_f2 = st.columns(2)
         with col_f1:
             all_genres = sorted(df["Genre"].unique())
             sel_genres = st.multiselect("Genres", all_genres, default=all_genres, key="dv_genre")
             all_platforms = sorted(df["Platform"].unique())
             sel_platforms = st.multiselect(
-                "Plateformes", all_platforms, default=all_platforms, key="dv_platform"
+                "Platforms", all_platforms, default=all_platforms, key="dv_platform"
             )
         with col_f2:
             all_publishers = sorted(df["Publisher"].unique())
             sel_publishers = st.multiselect(
-                "Editeurs", all_publishers, default=all_publishers, key="dv_publisher"
+                "Publishers", all_publishers, default=all_publishers, key="dv_publisher"
             )
             year_min, year_max = int(df["Year"].min()), int(df["Year"].max())
             sel_years = st.slider(
-                "Periode", year_min, year_max, (year_min, year_max), key="dv_year"
+                "Period", year_min, year_max, (year_min, year_max), key="dv_year"
             )
 
     # Apply filters
@@ -69,10 +69,10 @@ def dataviz_page() -> None:
     df_f = df[mask]
 
     if df_f.empty:
-        st.warning("Aucun jeu ne correspond aux filtres selectionnes.")
+        st.warning("No games match the selected filters.")
         return
 
-    st.caption(f"{len(df_f):,} jeux selectionnes sur {len(df):,}")
+    st.caption(f"{len(df_f):,} games selected out of {len(df):,}")
 
     st.markdown("---")
 
@@ -81,7 +81,7 @@ def dataviz_page() -> None:
     # ------------------------------------------------------------------
     # 1. Global sales over time
     # ------------------------------------------------------------------
-    st.header("Evolution des ventes globales par annee")
+    st.header("Global Sales Trend by Year")
     sales_by_year = df_f.groupby("Year")["Global_Sales"].sum()
     mean_sales = sales_by_year.mean()
     median_sales = sales_by_year.median()
@@ -92,27 +92,27 @@ def dataviz_page() -> None:
             x=sales_by_year.index,
             y=sales_by_year,
             mode="lines+markers",
-            name="Ventes annuelles",
+            name="Annual Sales",
             line=dict(color=ACCENT),
         )
     )
     fig.add_hline(
         y=mean_sales,
         line=dict(color=SECONDARY, dash="solid"),
-        annotation_text=f"Moyenne: {mean_sales:.2f} M",
+        annotation_text=f"Mean: {mean_sales:.2f} M",
         annotation_position="bottom right",
     )
     fig.add_hline(
         y=median_sales,
         line=dict(color="#F59E0B", dash="dash"),
-        annotation_text=f"Mediane: {median_sales:.2f} M",
+        annotation_text=f"Median: {median_sales:.2f} M",
         annotation_position="bottom right",
     )
     fig.update_layout(
-        title="Evolution des ventes globales par annee",
-        xaxis_title="Annee",
-        yaxis_title="Ventes globales (millions)",
-        legend_title="Legende",
+        title="Global Sales Trend by Year",
+        xaxis_title="Year",
+        yaxis_title="Global Sales (millions)",
+        legend_title="Legend",
         **PLOTLY_LAYOUT,
     )
     st.plotly_chart(fig, use_container_width=True)
@@ -120,7 +120,7 @@ def dataviz_page() -> None:
     # ------------------------------------------------------------------
     # 2. Regional sales over time
     # ------------------------------------------------------------------
-    st.header("Evolution des ventes par region")
+    st.header("Sales Trend by Region")
     df_sales_year = df_f.groupby("Year").agg(
         {
             "NA_Sales": "sum",
@@ -133,12 +133,12 @@ def dataviz_page() -> None:
         df_sales_year,
         x=df_sales_year.index,
         y=["NA_Sales", "EU_Sales", "JP_Sales", "Other_Sales"],
-        title="Evolution des ventes par region",
+        title="Sales Trend by Region",
         color_discrete_sequence=_REGION_COLORS,
     )
     fig.update_layout(
-        xaxis_title="Annee",
-        yaxis_title="Ventes (millions)",
+        xaxis_title="Year",
+        yaxis_title="Sales (millions)",
         **PLOTLY_LAYOUT,
     )
     st.plotly_chart(fig, use_container_width=True)
@@ -150,14 +150,14 @@ def dataviz_page() -> None:
         region_sales,
         x="Region",
         y="Total_Sales",
-        title="Ventes totales par region",
-        labels={"Total_Sales": "Ventes totales (millions)", "Region": "Region"},
+        title="Total Sales by Region",
+        labels={"Total_Sales": "Total Sales (millions)", "Region": "Region"},
         color="Region",
         color_discrete_sequence=_REGION_COLORS,
     )
     fig.update_layout(
         xaxis_title="Region",
-        yaxis_title="Ventes totales (millions)",
+        yaxis_title="Total Sales (millions)",
         **PLOTLY_LAYOUT,
     )
     st.plotly_chart(fig, use_container_width=True)
@@ -165,12 +165,12 @@ def dataviz_page() -> None:
     # ------------------------------------------------------------------
     # 3. Regional vs global scatter
     # ------------------------------------------------------------------
-    st.header("Relation entre les ventes regionales et les ventes globales")
+    st.header("Regional Sales vs Global Sales")
     region_cols = [
-        ("NA_Sales", "Ventes NA"),
-        ("EU_Sales", "Ventes EU"),
-        ("JP_Sales", "Ventes JP"),
-        ("Other_Sales", "Autres ventes"),
+        ("NA_Sales", "NA Sales"),
+        ("EU_Sales", "EU Sales"),
+        ("JP_Sales", "JP Sales"),
+        ("Other_Sales", "Other Sales"),
     ]
     for region_col, region_label in region_cols:
         fig = px.scatter(
@@ -178,10 +178,10 @@ def dataviz_page() -> None:
             x=region_col,
             y="Global_Sales",
             color="Genre",
-            title=f"{region_label} vs Ventes Globales",
+            title=f"{region_label} vs Global Sales",
             labels={
                 region_col: f"{region_label} (millions)",
-                "Global_Sales": "Ventes Globales (millions)",
+                "Global_Sales": "Global Sales (millions)",
             },
             opacity=0.6,
         )
@@ -191,7 +191,7 @@ def dataviz_page() -> None:
     # ------------------------------------------------------------------
     # 4. Top 10 publishers by region
     # ------------------------------------------------------------------
-    st.header("Ventes par region pour les 10 principaux editeurs")
+    st.header("Sales by Region for the Top 10 Publishers")
     ventes_par_editeur = (
         df_f.groupby("Publisher")
         .agg(
@@ -217,8 +217,8 @@ def dataviz_page() -> None:
         x="Publisher",
         y="Sales",
         color="Region",
-        title="Ventes par region pour les 10 principaux editeurs",
-        labels={"Sales": "Ventes (millions)", "Publisher": "Editeur"},
+        title="Sales by Region for the Top 10 Publishers",
+        labels={"Sales": "Sales (millions)", "Publisher": "Publisher"},
         text_auto=True,
         color_discrete_sequence=_REGION_COLORS,
     )
@@ -228,14 +228,14 @@ def dataviz_page() -> None:
     # ------------------------------------------------------------------
     # 5. Sales distribution by genre
     # ------------------------------------------------------------------
-    st.header("Distribution des ventes globales par genre de jeu")
+    st.header("Global Sales Distribution by Game Genre")
     fig = px.box(
         df_f,
         x="Genre",
         y="Global_Sales",
         color="Genre",
-        title="Distribution des ventes globales par genre de jeu",
-        labels={"Global_Sales": "Ventes globales (millions)", "Genre": "Genre"},
+        title="Global Sales Distribution by Game Genre",
+        labels={"Global_Sales": "Global Sales (millions)", "Genre": "Genre"},
         notched=True,
         points="all",
     )
@@ -249,7 +249,7 @@ def dataviz_page() -> None:
     # ------------------------------------------------------------------
     # 6. Top 5 genres over time
     # ------------------------------------------------------------------
-    st.header("Evolution des ventes par genre (top 5)")
+    st.header("Sales Trend by Genre (Top 5)")
     top_5_genre = df_f.groupby("Genre")["Global_Sales"].sum().nlargest(5).index.tolist()
     if top_5_genre:
         df_top5 = df_f[df_f["Genre"].isin(top_5_genre)]
@@ -263,11 +263,11 @@ def dataviz_page() -> None:
             pivot,
             x=pivot.index,
             y=pivot.columns,
-            title="Evolution des ventes en fonction des genres (top 5)",
+            title="Sales Trend by Genre (Top 5)",
         )
         fig.update_layout(
-            xaxis_title="Annee",
-            yaxis_title="Ventes globales (millions)",
+            xaxis_title="Year",
+            yaxis_title="Global Sales (millions)",
             **PLOTLY_LAYOUT,
         )
         st.plotly_chart(fig, use_container_width=True)
@@ -279,12 +279,12 @@ def dataviz_page() -> None:
     _has_user_review = df_f["user_review"].nunique() > 1
 
     if _has_user_review:
-        st.header("Correlation entre Meta Score et User Review")
+        st.header("Correlation Between Meta Score and User Review")
         fig = px.scatter(
             df_f,
             x="meta_score",
             y="user_review",
-            title="Relation entre Meta Score et User Review",
+            title="Relationship Between Meta Score and User Review",
             labels={"meta_score": "Meta Score", "user_review": "User Review"},
             trendline="ols",
             color="Genre",
@@ -296,13 +296,13 @@ def dataviz_page() -> None:
     # ------------------------------------------------------------------
     # 8. Sales by Meta Score / User Review
     # ------------------------------------------------------------------
-    st.header("Ventes vs Meta Score")
+    st.header("Sales vs Meta Score")
     fig = px.histogram(
         df_f,
         x="meta_score",
         y="Global_Sales",
-        title="Ventes globales vs Meta Score",
-        labels={"meta_score": "Meta Score", "Global_Sales": "Ventes (millions)"},
+        title="Global Sales vs Meta Score",
+        labels={"meta_score": "Meta Score", "Global_Sales": "Sales (millions)"},
         log_y=True,
         color_discrete_sequence=[ACCENT],
     )
@@ -310,13 +310,13 @@ def dataviz_page() -> None:
     st.plotly_chart(fig, use_container_width=True)
 
     if _has_user_review:
-        st.header("Ventes vs User Review")
+        st.header("Sales vs User Review")
         fig = px.histogram(
             df_f,
             x="user_review",
             y="Global_Sales",
-            title="Ventes globales vs User Review",
-            labels={"user_review": "User Review", "Global_Sales": "Ventes (millions)"},
+            title="Global Sales vs User Review",
+            labels={"user_review": "User Review", "Global_Sales": "Sales (millions)"},
             log_y=True,
             color_discrete_sequence=[SECONDARY],
         )
@@ -326,7 +326,7 @@ def dataviz_page() -> None:
     # ------------------------------------------------------------------
     # 9. Average scores by genre
     # ------------------------------------------------------------------
-    st.header("Moyenne des avis presse par genre")
+    st.header("Average Critics Score by Genre")
     df_score = (
         df_f.groupby("Genre")
         .agg(meta_score=("meta_score", "mean"))
@@ -339,10 +339,10 @@ def dataviz_page() -> None:
         x="Genre",
         y="meta_score",
         color="Genre",
-        title="Moyenne des avis presse par genre",
-        labels={"meta_score": "Avis presse"},
+        title="Average Critics Score by Genre",
+        labels={"meta_score": "Critics Score"},
     )
-    fig.update_layout(yaxis_title="Avis presse", **PLOTLY_LAYOUT)
+    fig.update_layout(yaxis_title="Critics Score", **PLOTLY_LAYOUT)
     st.plotly_chart(fig, use_container_width=True)
 
     if _has_user_review:
@@ -357,8 +357,8 @@ def dataviz_page() -> None:
             x="Genre",
             y="user_review",
             color="Genre",
-            title="Moyenne des avis joueurs par genre",
-            labels={"user_review": "Avis joueurs"},
+            title="Average Player Review Score by Genre",
+            labels={"user_review": "Player Review"},
         )
-        fig.update_layout(yaxis_title="Avis joueurs", **PLOTLY_LAYOUT)
+        fig.update_layout(yaxis_title="Player Review", **PLOTLY_LAYOUT)
         st.plotly_chart(fig, use_container_width=True)

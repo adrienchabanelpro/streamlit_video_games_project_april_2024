@@ -103,11 +103,11 @@ def source_card(
             </div>
             <div style="display:flex;gap:24px;flex-wrap:wrap">
                 <div>
-                    <span style="color:{TEXT_MUTED};font-size:0.8rem">Lignes</span><br>
+                    <span style="color:{TEXT_MUTED};font-size:0.8rem">Rows</span><br>
                     <span style="font-weight:600;color:#F1F5F9">{row_count}</span>
                 </div>
                 <div>
-                    <span style="color:{TEXT_MUTED};font-size:0.8rem">Champs cles</span><br>
+                    <span style="color:{TEXT_MUTED};font-size:0.8rem">Key Fields</span><br>
                     <span style="font-weight:600;color:#F1F5F9">{fields}</span>
                 </div>
             </div>

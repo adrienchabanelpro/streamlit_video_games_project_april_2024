@@ -27,16 +27,6 @@ Thumbs.db
 .claude/projects/
 .claude/settings.local.json
 
-# Claude Flow framework (not needed for app)
-.claude/agents/
-.claude/skills/
-.claude/commands/
-.claude/helpers/
-.claude/memory.db
-.claude-flow/
-.swarm/
-.mcp.json
-
 # ML artifacts (regeneratable)
 catboost_info/
 mlruns/

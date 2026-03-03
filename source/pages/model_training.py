@@ -22,12 +22,12 @@ def _load_training_log() -> dict | None:
 
 def model_training_page() -> None:
     """Render the Model Training & Evaluation page."""
-    st.title("Entrainement & Evaluation des Modeles")
-    st.caption("Comparaison des modeles, architecture du stacking ensemble, et metriques detaillees")
+    st.title("Model Training & Evaluation")
+    st.caption("Model comparison, stacking ensemble architecture, and detailed metrics")
 
     log = _load_training_log()
     if log is None:
-        st.warning("Aucun log d'entrainement trouve. Lancez `make train` d'abord.")
+        st.warning("No training log found. Run `make train` first.")
         return
 
     metrics = log.get("metrics", {})
@@ -50,13 +50,13 @@ def model_training_page() -> None:
     st.divider()
 
     # Model comparison table
-    section_header("Comparaison des modeles", "Performance sur le jeu de test (donnees post-split)")
+    section_header("Model Comparison", "Performance on the test set (post-split data)")
 
     model_rows = []
     for name, m in metrics.items():
         if isinstance(m, dict) and "r2" in m:
             model_rows.append({
-                "Modele": name.replace("_", " ").title(),
+                "Model": name.replace("_", " ").title(),
                 "R²": round(m.get("r2", 0), 4),
                 "RMSE": round(m.get("rmse", 0), 4),
                 "MAE": round(m.get("mae", 0), 4),
@@ -70,16 +70,16 @@ def model_training_page() -> None:
         # Bar chart comparison
         fig = go.Figure()
         fig.add_trace(go.Bar(
-            x=df_models["Modele"],
+            x=df_models["Model"],
             y=df_models["R²"],
             marker_color=[ACCENT if "Ensemble" in n or "Stacking" in n else SECONDARY
-                         for n in df_models["Modele"]],
+                         for n in df_models["Model"]],
             text=df_models["R²"].apply(lambda x: f"{x:.4f}"),
             textposition="outside",
         ))
         fig.update_layout(
             **PLOTLY_LAYOUT,
-            title="R² par modele",
+            title="R² by Model",
             yaxis_title="R²",
             showlegend=False,
             height=400,
@@ -89,7 +89,7 @@ def model_training_page() -> None:
     st.divider()
 
     # Stacking architecture
-    section_header("Architecture du Stacking Ensemble")
+    section_header("Stacking Ensemble Architecture")
 
     if "stacking_meta_weights" in log:
         weights = log["stacking_meta_weights"]
@@ -97,13 +97,13 @@ def model_training_page() -> None:
                      if name != "elastic_net"][:len(weights)]
 
         info_card(
-            "Stacking a 2 niveaux",
+            "2-Level Stacking",
             f"""
-            <b>Niveau 0 (base models)</b> : {', '.join(base_names)}<br>
-            <b>Niveau 1 (meta-learner)</b> : Ridge Regression (alpha={log.get('stacking_meta_alpha', '?'):.4f})<br>
+            <b>Level 0 (base models)</b>: {', '.join(base_names)}<br>
+            <b>Level 1 (meta-learner)</b>: Ridge Regression (alpha={log.get('stacking_meta_alpha', '?'):.4f})<br>
             <br>
-            Les predictions out-of-fold (5-fold CV) des modeles de base servent
-            d'entrees au meta-learner, evitant le surapprentissage du simple moyennage.
+            Out-of-fold predictions (5-fold CV) from base models serve as inputs
+            to the meta-learner, avoiding the overfitting of simple averaging.
             """
         )
 
@@ -118,8 +118,8 @@ def model_training_page() -> None:
             ))
             fig_w.update_layout(
                 **PLOTLY_LAYOUT,
-                title="Poids du meta-learner par modele",
-                yaxis_title="Coefficient Ridge",
+                title="Meta-Learner Weights by Model",
+                yaxis_title="Ridge Coefficient",
                 height=350,
             )
             st.plotly_chart(fig_w, use_container_width=True)
@@ -133,15 +133,15 @@ def model_training_page() -> None:
                 metric_card("Simple Average R²", f"{ensemble_m['simple_avg_r2']:.4f}", icon="📊", accent=SECONDARY)
     else:
         info_card(
-            "Ensemble par moyennage",
-            "Les predictions des 3 modeles (LightGBM, XGBoost, CatBoost) sont moyennees. "
-            "Le pipeline v3 utilise un stacking ensemble avec meta-learner Ridge.",
+            "Averaging Ensemble",
+            "Predictions from 3 models (LightGBM, XGBoost, CatBoost) are averaged. "
+            "The v3 pipeline uses a stacking ensemble with a Ridge meta-learner.",
         )
 
     st.divider()
 
     # Hyperparameters
-    section_header("Hyperparametres optimaux", "Trouves par Optuna (tuning bayesien)")
+    section_header("Best Hyperparameters", "Found by Optuna (Bayesian tuning)")
 
     best_params = log.get("best_params", {})
     if best_params:
@@ -153,7 +153,7 @@ def model_training_page() -> None:
     st.divider()
 
     # SHAP feature importance
-    section_header("Importance des variables (SHAP)")
+    section_header("Feature Importance (SHAP)")
 
     shap_bar = REPORTS_DIR / "shap_bar_v3.png"
     if not shap_bar.exists():
@@ -163,25 +163,25 @@ def model_training_page() -> None:
         shap_summary = REPORTS_DIR / "shap_summary.png"
 
     if shap_bar.exists() or shap_summary.exists():
-        tab1, tab2 = st.tabs(["Importance moyenne", "Beeswarm"])
+        tab1, tab2 = st.tabs(["Mean Importance", "Beeswarm"])
         with tab1:
             if shap_bar.exists():
                 st.image(str(shap_bar), use_container_width=True)
             else:
-                st.info("Plot non disponible")
+                st.info("Plot not available")
         with tab2:
             if shap_summary.exists():
                 st.image(str(shap_summary), use_container_width=True)
             else:
-                st.info("Plot non disponible")
+                st.info("Plot not available")
     else:
-        st.info("Les plots SHAP seront generes apres l'entrainement du modele.")
+        st.info("SHAP plots will be generated after model training.")
 
     # Training metadata
-    with st.expander("Metadata d'entrainement"):
-        st.write(f"**Date** : {log.get('timestamp', 'N/A')}")
-        st.write(f"**Split year** : {log.get('split_year', 'N/A')}")
-        st.write(f"**Log transform** : {log.get('log_transform', 'N/A')}")
-        st.write(f"**Random state** : {log.get('random_state', 'N/A')}")
-        st.write(f"**Features** ({len(features)}) :")
+    with st.expander("Training Metadata"):
+        st.write(f"**Date**: {log.get('timestamp', 'N/A')}")
+        st.write(f"**Split year**: {log.get('split_year', 'N/A')}")
+        st.write(f"**Log transform**: {log.get('log_transform', 'N/A')}")
+        st.write(f"**Random state**: {log.get('random_state', 'N/A')}")
+        st.write(f"**Features** ({len(features)}):")
         st.code(", ".join(features))

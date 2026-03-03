@@ -22,17 +22,17 @@ def _load_data() -> pd.DataFrame:
 
 def market_insights_page() -> None:
     """Render the Market Insights page."""
-    st.title("Tendances du Marche")
-    st.caption("Evolution des ventes, genres, plateformes et editeurs au fil du temps")
+    st.title("Market Trends")
+    st.caption("Sales evolution, genres, platforms and publishers over time")
 
     df = _load_data()
     if df.empty:
-        st.warning("Dataset non trouve.")
+        st.warning("Dataset not found.")
         return
 
     # Tab layout
     tab1, tab2, tab3, tab4 = st.tabs([
-        "Evolution temporelle", "Genres", "Plateformes", "Editeurs"
+        "Temporal Evolution", "Genres", "Platforms", "Publishers"
     ])
 
     with tab1:
@@ -50,7 +50,7 @@ def market_insights_page() -> None:
 
 def _temporal_tab(df: pd.DataFrame) -> None:
     """Sales and releases over time."""
-    section_header("Evolution des ventes mondiales")
+    section_header("Global Sales Evolution")
 
     yearly = df.groupby("Year").agg(
         total_sales=("Global_Sales", "sum"),
@@ -65,13 +65,13 @@ def _temporal_tab(df: pd.DataFrame) -> None:
         mode="lines+markers",
         line=dict(color=ACCENT, width=2),
         marker=dict(size=5),
-        name="Ventes totales (M$)",
+        name="Total Sales (M$)",
     ))
     fig.update_layout(
         **PLOTLY_LAYOUT,
-        title="Ventes mondiales totales par annee",
-        xaxis_title="Annee",
-        yaxis_title="Ventes (millions $)",
+        title="Total Global Sales by Year",
+        xaxis_title="Year",
+        yaxis_title="Sales (millions $)",
         height=400,
     )
     st.plotly_chart(fig, use_container_width=True)
@@ -83,7 +83,7 @@ def _temporal_tab(df: pd.DataFrame) -> None:
             yearly, x="Year", y="game_count",
             color_discrete_sequence=[SECONDARY],
         )
-        fig2.update_layout(**PLOTLY_LAYOUT, title="Jeux sortis par annee", height=350)
+        fig2.update_layout(**PLOTLY_LAYOUT, title="Games Released per Year", height=350)
         st.plotly_chart(fig2, use_container_width=True)
 
     with c2:
@@ -91,13 +91,13 @@ def _temporal_tab(df: pd.DataFrame) -> None:
             yearly, x="Year", y="avg_sales",
             color_discrete_sequence=[SUCCESS],
         )
-        fig3.update_layout(**PLOTLY_LAYOUT, title="Ventes moyennes par jeu", height=350)
+        fig3.update_layout(**PLOTLY_LAYOUT, title="Average Sales per Game", height=350)
         st.plotly_chart(fig3, use_container_width=True)
 
 
 def _genre_tab(df: pd.DataFrame) -> None:
     """Genre analysis."""
-    section_header("Analyse par genre")
+    section_header("Genre Analysis")
 
     # Genre evolution (stacked area)
     genre_year = df.groupby(["Year", "Genre"])["Global_Sales"].sum().reset_index()
@@ -108,7 +108,7 @@ def _genre_tab(df: pd.DataFrame) -> None:
         genre_year_top, x="Year", y="Global_Sales", color="Genre",
         color_discrete_sequence=px.colors.qualitative.Set2,
     )
-    fig.update_layout(**PLOTLY_LAYOUT, title="Evolution des ventes par genre (top 8)", height=450)
+    fig.update_layout(**PLOTLY_LAYOUT, title="Sales Evolution by Genre (Top 8)", height=450)
     st.plotly_chart(fig, use_container_width=True)
 
     # Genre comparison
@@ -124,13 +124,13 @@ def _genre_tab(df: pd.DataFrame) -> None:
         color="avg_sales",
         color_continuous_scale="Blues",
     )
-    fig2.update_layout(**PLOTLY_LAYOUT, title="Ventes totales par genre", height=500)
+    fig2.update_layout(**PLOTLY_LAYOUT, title="Total Sales by Genre", height=500)
     st.plotly_chart(fig2, use_container_width=True)
 
 
 def _platform_tab(df: pd.DataFrame) -> None:
     """Platform analysis."""
-    section_header("Analyse par plateforme")
+    section_header("Platform Analysis")
 
     # Platform lifecycle heatmap
     platform_year = df.groupby(["Year", "Platform"])["Global_Sales"].sum().reset_index()
@@ -144,7 +144,7 @@ def _platform_tab(df: pd.DataFrame) -> None:
         color_continuous_scale="Blues",
         aspect="auto",
     )
-    fig.update_layout(**PLOTLY_LAYOUT, title="Cycle de vie des plateformes (ventes)", height=500)
+    fig.update_layout(**PLOTLY_LAYOUT, title="Platform Lifecycle (Sales)", height=500)
     st.plotly_chart(fig, use_container_width=True)
 
     # Platform market share over time
@@ -160,8 +160,8 @@ def _platform_tab(df: pd.DataFrame) -> None:
     )
     fig2.update_layout(
         **PLOTLY_LAYOUT,
-        title="Part de marche des plateformes (%)",
-        yaxis_title="Part (%)",
+        title="Platform Market Share (%)",
+        yaxis_title="Share (%)",
         height=400,
     )
     st.plotly_chart(fig2, use_container_width=True)
@@ -169,7 +169,7 @@ def _platform_tab(df: pd.DataFrame) -> None:
 
 def _publisher_tab(df: pd.DataFrame) -> None:
     """Publisher analysis."""
-    section_header("Analyse des editeurs")
+    section_header("Publisher Analysis")
 
     pub_stats = df.groupby("Publisher").agg(
         total_sales=("Global_Sales", "sum"),
@@ -179,7 +179,7 @@ def _publisher_tab(df: pd.DataFrame) -> None:
     ).sort_values("total_sales", ascending=False).reset_index()
 
     # Top publishers
-    top_n = st.slider("Nombre d'editeurs a afficher", 5, 30, 15)
+    top_n = st.slider("Number of publishers to display", 5, 30, 15)
     top_pubs = pub_stats.head(top_n)
 
     fig = px.bar(
@@ -189,21 +189,21 @@ def _publisher_tab(df: pd.DataFrame) -> None:
     )
     fig.update_layout(
         **PLOTLY_LAYOUT,
-        title=f"Top {top_n} editeurs par ventes totales",
+        title=f"Top {top_n} Publishers by Total Sales",
         xaxis_tickangle=-45,
         height=450,
     )
     st.plotly_chart(fig, use_container_width=True)
 
     # Publisher table
-    with st.expander("Tableau detaille des editeurs"):
+    with st.expander("Detailed Publisher Table"):
         st.dataframe(
             top_pubs.rename(columns={
-                "Publisher": "Editeur",
-                "total_sales": "Ventes totales (M$)",
-                "avg_sales": "Ventes moyennes",
-                "game_count": "Nombre de jeux",
-                "best_game_sales": "Meilleur jeu (M$)",
+                "Publisher": "Publisher",
+                "total_sales": "Total Sales (M$)",
+                "avg_sales": "Average Sales",
+                "game_count": "Game Count",
+                "best_game_sales": "Best Game (M$)",
             }),
             use_container_width=True,
             hide_index=True,

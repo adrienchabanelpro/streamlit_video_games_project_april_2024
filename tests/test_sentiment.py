@@ -1,4 +1,4 @@
-"""Tests for the sentiment analysis pipeline (source/analyse_avis_utilisateurs.py)."""
+"""Tests for the sentiment analysis pipeline (source/sentiment_analysis.py)."""
 
 import io
 
@@ -7,7 +7,7 @@ import pytest
 
 pytest.importorskip("transformers")
 
-from analyse_avis_utilisateurs import predict_user_reviews
+from sentiment_analysis import predict_user_reviews
 
 
 class TestPredictUserReviews:

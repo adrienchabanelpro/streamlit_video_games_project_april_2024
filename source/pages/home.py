@@ -44,61 +44,61 @@ def _load_overview_stats() -> dict:
 
 def home_page() -> None:
     """Render the home/overview page."""
-    st.title("Prediction des Ventes de Jeux Video")
+    st.title("Video Game Sales Prediction")
     st.caption(
-        "Projet de Data Science : collecte, analyse et prediction des ventes "
-        "mondiales de jeux video a partir de sources multiples"
+        "Data Science Project: collection, analysis, and prediction of global "
+        "video game sales from multiple sources"
     )
 
     stats = _load_overview_stats()
 
     # Key metrics row
-    section_header("Vue d'ensemble")
+    section_header("Overview")
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        metric_card("Jeux dans le dataset", f"{stats['rows']:,}", icon="🎮")
+        metric_card("Games in Dataset", f"{stats['rows']:,}", icon="🎮")
     with c2:
-        metric_card("Colonnes", stats["cols"], icon="📊")
+        metric_card("Columns", stats["cols"], icon="📊")
     with c3:
         metric_card("Features ML", stats["features"], icon="⚙️")
     with c4:
-        metric_card("Meilleur R²", f"{stats['best_r2']:.3f}", icon="🎯")
+        metric_card("Best R²", f"{stats['best_r2']:.3f}", icon="🎯")
 
     st.divider()
 
     # Project description
-    section_header("Objectif du projet")
+    section_header("Project Objective")
     st.write(
         """
-        Ce projet utilise le **Machine Learning** pour predire les ventes mondiales
-        de jeux video. Il combine **5 sources de donnees** (VGChartz, SteamSpy,
-        RAWG, IGDB, HowLongToBeat) et un **ensemble de modeles** (LightGBM, XGBoost,
-        CatBoost, Random Forest, HistGradientBoosting) avec un **meta-learner Ridge**
-        (stacking) pour des predictions optimales.
+        This project uses **Machine Learning** to predict global video game sales.
+        It combines **5 data sources** (VGChartz, SteamSpy, RAWG, IGDB, HowLongToBeat)
+        and an **ensemble of models** (LightGBM, XGBoost, CatBoost, Random Forest,
+        HistGradientBoosting) with a **Ridge meta-learner** (stacking) for optimal
+        predictions.
 
-        Chaque etape est documentee dans les pages correspondantes.
+        Each step is documented in the corresponding pages.
         """
     )
 
     st.divider()
 
     # Pipeline overview
-    section_header("Pipeline de donnees", "De la collecte a la prediction")
+    section_header("Data Pipeline", "From collection to prediction")
 
     col1, col2 = st.columns(2)
     with col1:
-        pipeline_step(1, "Collecte de donnees", "5 sources: VGChartz, SteamSpy, RAWG API, IGDB API, HLTB")
-        pipeline_step(2, "Fusion & nettoyage", "Fuzzy matching, deduplication, gestion des valeurs manquantes")
-        pipeline_step(3, "Analyse exploratoire", "Distributions, correlations, tendances temporelles")
+        pipeline_step(1, "Data Collection", "5 sources: VGChartz, SteamSpy, RAWG API, IGDB API, HLTB")
+        pipeline_step(2, "Merging & Cleaning", "Fuzzy matching, deduplication, missing value handling")
+        pipeline_step(3, "Exploratory Analysis", "Distributions, correlations, temporal trends")
     with col2:
-        pipeline_step(4, "Feature Engineering", "30+ variables : temporelles, engagement, track record, marche")
-        pipeline_step(5, "Entrainement", "7 modeles + Optuna tuning + stacking ensemble")
-        pipeline_step(6, "Evaluation", "R², RMSE, MAE, SHAP, residus, courbes d'apprentissage")
+        pipeline_step(4, "Feature Engineering", "30+ variables: temporal, engagement, track record, market")
+        pipeline_step(5, "Training", "7 models + Optuna tuning + stacking ensemble")
+        pipeline_step(6, "Evaluation", "R², RMSE, MAE, SHAP, residuals, learning curves")
 
     st.divider()
 
     # Tech stack
-    section_header("Stack technique")
+    section_header("Tech Stack")
     c1, c2, c3 = st.columns(3)
     with c1:
         info_card(
@@ -107,7 +107,7 @@ def home_page() -> None:
         )
     with c2:
         info_card(
-            "Visualisation",
+            "Visualization",
             "Plotly, Streamlit, matplotlib",
             accent="#8B5CF6",
         )
