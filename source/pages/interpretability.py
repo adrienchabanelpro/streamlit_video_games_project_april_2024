@@ -163,6 +163,13 @@ def _get_feature_descriptions() -> dict[str, str]:
         "steam_price": "Current Steam price",
         "steam_initialprice": "Launch price on Steam",
         "steam_review_pct": "Percentage of positive Steam reviews",
+        "oc_top_critic_score": "OpenCritic top critic average score",
+        "oc_percent_recommended": "Percentage of critics recommending the game (OpenCritic)",
+        "critic_score_combined": "Weighted combination of Metacritic + OpenCritic scores",
+        "steam_store_price_usd": "Current Steam Store price in USD",
+        "has_dlc": "Game has downloadable content available",
+        "steam_store_recommendations": "Number of Steam Store user recommendations",
+        "has_verified_sales": "Game has verified (non-estimated) sales figures",
     }
 
 
@@ -186,6 +193,14 @@ def _categorize_feature(name: str) -> str:
         return "Game Characteristics"
     if name.startswith("igdb_"):
         return "IGDB"
+    if name.startswith("oc_"):
+        return "OpenCritic"
+    if name == "critic_score_combined":
+        return "Critic Scores"
+    if name.startswith("steam_store_") or name == "has_dlc":
+        return "Steam Store"
+    if name == "has_verified_sales":
+        return "Data Quality"
     if name.startswith("steam_") and "price" in name:
         return "Price"
     if name in ("meta_score", "user_review"):

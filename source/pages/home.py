@@ -71,10 +71,10 @@ def home_page() -> None:
     st.write(
         """
         This project uses **Machine Learning** to predict global video game sales.
-        It combines **5 data sources** (VGChartz, SteamSpy, RAWG, IGDB, HowLongToBeat)
-        and an **ensemble of models** (LightGBM, XGBoost, CatBoost, Random Forest,
-        HistGradientBoosting) with a **Ridge meta-learner** (stacking) for optimal
-        predictions.
+        It combines **9 data sources** (VGChartz, SteamSpy, RAWG, IGDB, HowLongToBeat,
+        Wikipedia, Steam Store, OpenCritic, Gamedatacrunch) and an **ensemble of models**
+        (LightGBM, XGBoost, CatBoost, Random Forest, HistGradientBoosting) with a
+        **Ridge meta-learner** (stacking) for optimal predictions.
 
         Each step is documented in the corresponding pages.
         """
@@ -87,11 +87,11 @@ def home_page() -> None:
 
     col1, col2 = st.columns(2)
     with col1:
-        pipeline_step(1, "Data Collection", "5 sources: VGChartz, SteamSpy, RAWG API, IGDB API, HLTB")
+        pipeline_step(1, "Data Collection", "9 sources: VGChartz, SteamSpy, RAWG, IGDB, HLTB, Wikipedia, Steam Store, OpenCritic, Gamedatacrunch")
         pipeline_step(2, "Merging & Cleaning", "Fuzzy matching, deduplication, missing value handling")
         pipeline_step(3, "Exploratory Analysis", "Distributions, correlations, temporal trends")
     with col2:
-        pipeline_step(4, "Feature Engineering", "30+ variables: temporal, engagement, track record, market")
+        pipeline_step(4, "Feature Engineering", "50 features: temporal, engagement, track record, market, critics, Steam Store, OpenCritic")
         pipeline_step(5, "Training", "7 models + Optuna tuning + stacking ensemble")
         pipeline_step(6, "Evaluation", "R², RMSE, MAE, SHAP, residuals, learning curves")
 
@@ -114,6 +114,6 @@ def home_page() -> None:
     with c3:
         info_card(
             "NLP & APIs",
-            "Transformers (DistilBERT), RAWG, IGDB, SteamSpy, HLTB",
+            "Transformers (DistilBERT), RAWG, IGDB, SteamSpy, HLTB, Wikipedia, Steam Store, OpenCritic",
             accent="#10B981",
         )

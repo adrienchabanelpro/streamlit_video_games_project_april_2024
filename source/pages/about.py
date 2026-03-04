@@ -18,13 +18,17 @@ def about_page() -> None:
 
         1. **Business Understanding** — Predict global video game sales
            from metadata (genre, platform, publisher, scores, etc.)
-        2. **Data Understanding** — 5 sources: VGChartz (physical sales),
-           SteamSpy (digital PC), RAWG API (metadata), IGDB (themes/franchises),
-           HowLongToBeat (completion times)
-        3. **Data Preparation** — Fuzzy matching merge, cleaning, imputation,
-           outlier winsorization
-        4. **Feature Engineering** — 30+ engineered variables: publisher track record,
-           market context, engagement, temporality, franchises
+        2. **Data Understanding** — 9 sources: VGChartz (physical sales),
+           SteamSpy (digital PC), RAWG (metadata), IGDB (themes/franchises),
+           HowLongToBeat (completion times), Wikipedia (verified sales),
+           Steam Store (pricing/DLC), OpenCritic (critic scores),
+           Gamedatacrunch (market data)
+        3. **Data Preparation** — Fuzzy matching merge, 5-tier data quality
+           classification, deduplication, zero-sales removal, imputation
+           (17.5K clean games from 64K+ raw records)
+        4. **Feature Engineering** — 50 engineered features: publisher/developer
+           track record, market context, Steam engagement, RAWG metadata,
+           HLTB completion, critics, Steam Store, OpenCritic
         5. **Modeling** — 7 models with Optuna tuning, stacking ensemble with
            Ridge meta-learner
         6. **Evaluation** — R², RMSE, MAE, MAPE, residual analysis, SHAP
