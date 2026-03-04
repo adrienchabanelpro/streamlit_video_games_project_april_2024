@@ -1,7 +1,7 @@
 """ML prediction logic: model loading, feature engineering, and ensemble inference.
 
 Supports two model versions:
-- **v3 (preferred):** 5 base models + Ridge meta-learner (stacking ensemble), 30+ features.
+- **v3 (preferred):** 5 base models + Ridge meta-learner (stacking ensemble), 50 features.
 - **v2 (fallback):** 3 base models simple average, 10 features.
 
 This module is Streamlit-agnostic. Caching decorators are applied in the page
