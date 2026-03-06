@@ -1,64 +1,79 @@
 {
-  "timestamp": "2026-03-04T13:43:42.245868",
+  "timestamp": "2026-03-06T11:48:37.736602",
   "input_file": "Ventes_jeux_video_v3.csv",
   "input_rows": 64016,
-  "output_rows": 17497,
-  "min_quality_tier": "tier_3_marginal",
+  "output_rows": 26136,
+  "min_quality_tier": "tier_4_marginal",
   "tier_distribution": {
     "tier_1_verified": 1082,
-    "tier_2_physical": 9467,
-    "tier_3_marginal": 7021,
-    "tier_4_digital_only": 7806,
-    "tier_5_no_sales": 38640
+    "tier_2_physical": 9473,
+    "tier_3_estimated": 13310,
+    "tier_4_marginal": 5996,
+    "tier_5_digital_proxy": 8,
+    "tier_6_no_sales": 34217
   },
   "filtered_tier_distribution": {
-    "tier_2_physical": 9440,
-    "tier_3_marginal": 6976,
+    "tier_3_estimated": 9652,
+    "tier_2_physical": 9446,
+    "tier_4_marginal": 5957,
     "tier_1_verified": 1081
   },
   "provenance_distribution": {
-    "vgchartz_physical": 16416,
-    "wikipedia_verified": 1081
+    "vgchartz_physical": 9446,
+    "review_multiplier": 9053,
+    "vgchartz_marginal": 5957,
+    "wikipedia_verified": 1680
   },
-  "sales_stats": {
-    "mean": 0.3769,
-    "median": 0.14,
-    "std": 0.8333,
-    "min": 0.01,
-    "max": 20.32
+  "confidence_distribution": {
+    "medium": 15010,
+    "high": 11126
+  },
+  "global_sales_stats": {
+    "non_zero_count": 17515,
+    "mean": 0.3766,
+    "median": 0.14
+  },
+  "estimated_total_sales_stats": {
+    "non_zero_count": 26136,
+    "mean": 1.9295,
+    "median": 0.1787
   },
   "feature_coverage": {
     "SteamSpy": {
-      "count": 2735,
-      "pct": 15.6
+      "count": 11374,
+      "pct": 43.5
     },
     "RAWG": {
-      "count": 17133,
-      "pct": 97.9
+      "count": 25731,
+      "pct": 98.5
     },
     "IGDB": {
-      "count": 10525,
-      "pct": 60.2
+      "count": 18570,
+      "pct": 71.1
     },
     "HLTB": {
-      "count": 12072,
-      "pct": 69.0
+      "count": 16817,
+      "pct": 64.3
     },
     "OpenCritic": {
-      "count": 16084,
-      "pct": 91.9
+      "count": 23931,
+      "pct": 91.6
     },
     "Wikipedia": {
-      "count": 1081,
-      "pct": 6.2
+      "count": 1680,
+      "pct": 6.4
     },
     "Steam Store": {
-      "count": 14259,
-      "pct": 81.5
+      "count": 21048,
+      "pct": 80.5
+    },
+    "Review Estimates": {
+      "count": 11346,
+      "pct": 43.4
     },
     "meta_score": {
-      "count": 3977,
-      "pct": 22.7
+      "count": 4626,
+      "pct": 17.7
     }
   }
 }

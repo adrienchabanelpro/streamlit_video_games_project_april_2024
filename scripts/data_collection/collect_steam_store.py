@@ -32,8 +32,31 @@ BATCH_SIZE = 100  # Save progress every N apps
 
 
 def _get_all_app_ids() -> list[dict]:
-    """Get Steam app IDs from the Steam API or fallback to SteamSpy data."""
-    # Try the Steam API first
+    """Get Steam app IDs, prioritized by SteamSpy owner count (most popular first).
+
+    Prefers SteamSpy as source (sorted by popularity) with Steam API as fallback.
+    """
+    # Prefer SteamSpy data (sorted by owner count for priority collection)
+    steamspy_path = RAW_DIR / "steamspy_all.csv"
+    if steamspy_path.exists():
+        df = pd.read_csv(steamspy_path)
+        appid_col = "appid" if "appid" in df.columns else "steam_appid"
+        name_col = "name" if "name" in df.columns else "Name"
+        owners_col = "owners_midpoint" if "owners_midpoint" in df.columns else None
+
+        if appid_col in df.columns and name_col in df.columns:
+            df = df.dropna(subset=[appid_col, name_col])
+            if owners_col and owners_col in df.columns:
+                df = df.sort_values(owners_col, ascending=False)
+            apps = [
+                {"appid": int(row[appid_col]), "name": str(row[name_col])}
+                for _, row in df.iterrows()
+                if str(row[name_col]).strip()
+            ]
+            print(f"[steam_store] Using {len(apps):,} app IDs from SteamSpy (sorted by popularity)")
+            return apps
+
+    # Fallback: Steam API (unsorted)
     try:
         resp = requests.get(APP_LIST_URL, timeout=30)
         resp.raise_for_status()
@@ -43,23 +66,6 @@ def _get_all_app_ids() -> list[dict]:
             return filtered
     except Exception as exc:
         print(f"[steam_store] Steam API app list unavailable: {exc}")
-
-    # Fallback: load app IDs from SteamSpy data
-    steamspy_path = RAW_DIR / "steamspy_all.csv"
-    if steamspy_path.exists():
-        import pandas as pd
-
-        df = pd.read_csv(steamspy_path)
-        appid_col = "appid" if "appid" in df.columns else "steam_appid"
-        name_col = "name" if "name" in df.columns else "Name"
-        if appid_col in df.columns and name_col in df.columns:
-            apps = [
-                {"appid": int(row[appid_col]), "name": str(row[name_col])}
-                for _, row in df.iterrows()
-                if pd.notna(row[appid_col]) and str(row[name_col]).strip()
-            ]
-            print(f"[steam_store] Using {len(apps):,} app IDs from SteamSpy data")
-            return apps
 
     print("[steam_store] ERROR: No app ID source available")
     return []
@@ -131,7 +137,7 @@ def _fetch_app_details(app_id: int) -> dict | None:
 
 
 def collect_steam_store(
-    max_games: int = 5000,
+    max_games: int = 20_000,
     force: bool = False,
 ) -> Path:
     """Collect game details from Steam Store API (resumable).
@@ -231,7 +237,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Collect Steam Store game data")
-    parser.add_argument("--max-games", type=int, default=5000, help="Max games (default: 5000)")
+    parser.add_argument("--max-games", type=int, default=20_000, help="Max games (default: 20000)")
     parser.add_argument("--force", action="store_true", help="Re-collect even if exists")
     args = parser.parse_args()
 

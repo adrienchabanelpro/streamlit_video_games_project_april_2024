@@ -76,10 +76,10 @@ def _search_hltb(game_name: str) -> dict | None:
 
 def collect_hltb(
     max_games: int = 10_000,
-    min_sales: float = 0.1,
+    min_sales: float = 0.01,
     force: bool = False,
 ) -> Path:
-    """Collect HLTB data for top-selling games (resumable).
+    """Collect HLTB data for games in the dataset (resumable).
 
     Parameters
     ----------
@@ -100,15 +100,18 @@ def collect_hltb(
         print(f"[hltb] Already exists: {OUTPUT_PATH} (use --force to re-collect)")
         return OUTPUT_PATH
 
-    # Load game names from the main dataset
-    dataset_path = PROJECT_ROOT / "data" / "Ventes_jeux_video_final.csv"
+    # Load game names — prefer v3 merged dataset, fallback to v2
+    v3_path = PROJECT_ROOT / "data" / "Ventes_jeux_video_v3.csv"
+    v2_path = PROJECT_ROOT / "data" / "Ventes_jeux_video_final.csv"
+    dataset_path = v3_path if v3_path.exists() else v2_path
     if not dataset_path.exists():
         raise FileNotFoundError(
-            f"Dataset not found: {dataset_path}\n"
-            "Run the Kaggle + SteamSpy pipeline first."
+            f"Dataset not found at {v3_path} or {v2_path}\n"
+            "Run the Kaggle + merge pipeline first."
         )
 
     df = pd.read_csv(dataset_path)
+    print(f"[hltb] Loaded {len(df):,} rows from {dataset_path.name}")
     # Get unique game names sorted by sales (highest first)
     df = df.dropna(subset=["Name", "Global_Sales"])
     df = df[df["Global_Sales"] >= min_sales]
@@ -207,7 +210,7 @@ if __name__ == "__main__":
         "--max-games", type=int, default=10_000, help="Max games to search (default: 10000)"
     )
     parser.add_argument(
-        "--min-sales", type=float, default=0.1, help="Min Global_Sales in millions (default: 0.1)"
+        "--min-sales", type=float, default=0.01, help="Min Global_Sales in millions (default: 0.01)"
     )
     parser.add_argument("--force", action="store_true", help="Re-collect even if exists")
     args = parser.parse_args()

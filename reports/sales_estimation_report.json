@@ -1,0 +1,128 @@
+{
+  "timestamp": "2026-03-06T11:48:32.727536",
+  "input_rows": 64016,
+  "games_with_reviews": 14937,
+  "estimates_generated": 14937,
+  "calibration": {
+    "calibration_size": 986,
+    "method": "genre_trimmed_median",
+    "global_median_multiplier": 106.1,
+    "global_mean_multiplier": 6610.3,
+    "default_fallback": 55.0,
+    "genre_stats": {
+      "Action": {
+        "samples": 235,
+        "multiplier": 103.6,
+        "median_raw": 103.6,
+        "p10": 22.2,
+        "p90": 586.8
+      },
+      "Action-Adventure": {
+        "samples": 152,
+        "multiplier": 104.1,
+        "median_raw": 104.1,
+        "p10": 30.9,
+        "p90": 329.5
+      },
+      "Adventure": {
+        "samples": 27,
+        "multiplier": 72.9,
+        "median_raw": 72.9,
+        "p10": 6.7,
+        "p90": 506.0
+      },
+      "Fighting": {
+        "samples": 49,
+        "multiplier": 69.1,
+        "median_raw": 69.1,
+        "p10": 15.4,
+        "p90": 895.7
+      },
+      "Misc": {
+        "samples": 31,
+        "multiplier": 435.3,
+        "median_raw": 435.3,
+        "p10": 30.9,
+        "p90": 1090.4
+      },
+      "Party": {
+        "samples": 6,
+        "multiplier": 4.4,
+        "median_raw": 4.4,
+        "p10": 4.4,
+        "p90": 4.4
+      },
+      "Platform": {
+        "samples": 26,
+        "multiplier": 185.4,
+        "median_raw": 185.4,
+        "p10": 42.6,
+        "p90": 1000000.0
+      },
+      "Racing": {
+        "samples": 32,
+        "multiplier": 100.2,
+        "median_raw": 100.2,
+        "p10": 33.3,
+        "p90": 386.2
+      },
+      "Role-Playing": {
+        "samples": 225,
+        "multiplier": 137.0,
+        "median_raw": 137.0,
+        "p10": 16.7,
+        "p90": 1133.7
+      },
+      "Shooter": {
+        "samples": 170,
+        "multiplier": 177.6,
+        "median_raw": 177.6,
+        "p10": 15.0,
+        "p90": 5759.3
+      },
+      "Simulation": {
+        "samples": 12,
+        "multiplier": 50.9,
+        "median_raw": 50.9,
+        "p10": 50.9,
+        "p90": 640.6
+      },
+      "Sports": {
+        "samples": 12,
+        "multiplier": 11.8,
+        "median_raw": 11.8,
+        "p10": 11.8,
+        "p90": 693.3
+      },
+      "Strategy": {
+        "samples": 7,
+        "multiplier": 110.3,
+        "median_raw": 110.3,
+        "p10": 96.6,
+        "p90": 145.1
+      }
+    }
+  },
+  "cross_validation": {
+    "overlap_count": 2716,
+    "mae_millions": 3.771,
+    "median_ae_millions": 0.4046,
+    "median_pct_error": 158.6,
+    "correlation": 0.1648
+  },
+  "genre_multipliers": {
+    "Action": 103.6,
+    "Action-Adventure": 104.1,
+    "Adventure": 72.9,
+    "Fighting": 69.1,
+    "Misc": 435.3,
+    "Party": 4.4,
+    "Platform": 185.4,
+    "Racing": 100.2,
+    "Role-Playing": 137.0,
+    "Shooter": 177.6,
+    "Simulation": 50.9,
+    "Sports": 11.8,
+    "Strategy": 110.3
+  }
+}
