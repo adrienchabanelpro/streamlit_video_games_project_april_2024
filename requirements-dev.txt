@@ -2,15 +2,12 @@
 transformers
 torch
 matplotlib
-mlflow
 optuna
 shap
 pytest
 ruff
 pre-commit
-dvc
 kagglehub
 steamspypi
 rapidfuzz
 howlongtobeatpy
-pytorch-tabnet

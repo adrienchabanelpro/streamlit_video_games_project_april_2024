@@ -35,7 +35,7 @@ CI: GitHub Actions runs pytest on push/PR to `main` (Python 3.12). See `.github/
 - `source/config.py` — Path constants (`ROOT`, `DATA_DIR`, `MODELS_DIR`), theme colors, `PLOTLY_LAYOUT`
 - `source/style.py` — CSS injection via `components.html()` JS into parent `<head>` (bypasses Streamlit sanitizer)
 - `source/components.py` — Shared UI: `metric_card`, `info_card`, `source_card`, `pipeline_step`, `section_header`
-- `source/ml/predict.py` — Streamlit-agnostic inference (v2: LGB+XGB+CB simple average)
+- `source/ml/predict.py` — Streamlit-agnostic inference (v3: 5-model stacking + Ridge meta-learner, v2 fallback)
 - `source/sentiment_analysis.py` — NLP sentiment (DistilBERT + BERT multilingual)
 
 **Pipelines:**
@@ -60,10 +60,11 @@ CI: GitHub Actions runs pytest on push/PR to `main` (Python 3.12). See `.github/
 
 ## Data & Models
 
-- `data/Ventes_jeux_video_v3.csv` — Unified dataset (multi-source merged)
-- `data/Ventes_jeux_video_final.csv` — v2 fallback (64K rows, VGChartz + SteamSpy)
-- **v2 (production):** LGB (`reports/model_v2_optuna.txt`) + XGB + CB simple average. Transformers: `models/scaler_v2.joblib`, `models/target_encoder_v2.joblib`, `models/feature_means_v2.joblib`
-- **v3 (stacking):** 5 base models + Ridge meta-learner. Artifacts: `models/model_v3_*`. Log: `reports/training_log_v3.json`
+- `data/Ventes_jeux_video_clean.csv` — Primary training dataset (26K rows, quality-filtered, sample-weighted)
+- `data/Ventes_jeux_video_v3.csv` — Full merged dataset (64K rows, 9-source, used by app pages)
+- `data/Ventes_jeux_video_final.csv` — v2 legacy fallback (64K rows, VGChartz + SteamSpy)
+- **v3 (production):** 5 base models (LGB, XGB, CB, RF, HGB) + Ridge meta-learner. R²=0.500, 50 features. Artifacts: `models/model_v3_*`, `reports/model_v3_lgb.txt`, `reports/training_log_v3.json`
+- **v2 (fallback):** LGB + XGB + CB simple average, 10 features. Artifacts: `models/*_v2.*`, `reports/model_v2_optuna.txt`
 - Model loading: `joblib.load()` for sklearn, `lgb.Booster(model_file=...)` for LightGBM
 
 ## Security

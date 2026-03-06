@@ -5,10 +5,8 @@ lightgbm
 scikit-learn
 joblib
 plotly
-altair
 requests
 pillow
-statsmodels
 category_encoders
 xgboost
 catboost

@@ -4,18 +4,20 @@ Interactive data science web application built with Streamlit for exploring, vis
 
 ## Project Overview
 
-This project combines data analysis, machine learning, and rich visualizations in a modern dark-themed web application. It predicts global video game sales using a **stacking ensemble** of 7 models (LightGBM, XGBoost, CatBoost, RandomForest, HistGradientBoosting, ElasticNet, TabNet) with a Ridge meta-learner, optimized with Optuna.
+This project combines data analysis, machine learning, and rich visualizations in a modern dark-themed web application. It predicts global video game sales using a **stacking ensemble** of 5 base models with a Ridge meta-learner, trained on data from 9 sources and optimized with Optuna.
 
-### Model Results (v2 — Production)
+### Model Results (v3 — Production)
 
 | Model | R² | RMSE | MAE |
-|-------|-----|------|-----|
-| LightGBM | 0.3740 | 0.3606 | 0.1006 |
-| XGBoost | 0.3754 | 0.3602 | 0.1009 |
-| CatBoost | 0.3556 | 0.3658 | 0.1021 |
-| **Ensemble** | **0.3811** | **0.3585** | **0.0998** |
+|-------|------|------|-----|
+| CatBoost | 0.506 | 0.621 | 0.288 |
+| LightGBM | 0.481 | 0.637 | 0.287 |
+| HistGBR | 0.477 | 0.639 | 0.298 |
+| XGBoost | 0.376 | 0.698 | 0.425 |
+| RandomForest | 0.297 | 0.741 | 0.384 |
+| **Stacking Ensemble** | **0.500** | **0.625** | **0.313** |
 
-*v2: 64K rows, 10 features, temporal split, no data leakage.*
+*v3: 26K cleaned rows (from 64K raw), 50 features, temporal split (2015), log-transformed target, sample weights by confidence tier.*
 
 ## Features
 
@@ -24,40 +26,42 @@ The application has **11 interactive pages**:
 | Page | Description |
 |------|-------------|
 | **Home** | Project overview, key metrics, data pipeline diagram |
-| **Data Sources** | Documentation of all data sources and merge methodology |
+| **Data Sources** | Documentation of all 9 data sources and merge methodology |
 | **Exploratory Analysis** | 20+ interactive Plotly charts with global filters |
-| **Feature Engineering** | Preprocessing pipeline, target encoding, engineered features |
+| **Feature Engineering** | Preprocessing pipeline, target encoding, 50 engineered features |
 | **Training** | Model comparison, stacking architecture, SHAP, hyperparameters |
 | **Predictions** | Single and batch prediction interface |
 | **Interpretability** | SHAP beeswarm plots, feature descriptions |
 | **What-If** | Sensitivity analysis — how each parameter impacts sales |
 | **Market Trends** | Genre, platform, and publisher analytics over time |
-| **Sentiment NLP** | DistilBERT sentiment analysis on user reviews |
+| **Sentiment NLP** | DistilBERT + BERT multilingual sentiment analysis |
 | **About** | Methodology, tech stack, limitations, and future work |
 
-## Data Sources
+## Data Sources (9)
 
-- **VGChartz 2024** (Kaggle) — ~64,000 games, worldwide physical sales
-- **SteamSpy** — ~46,000 Steam games, owner estimates, reviews, playtime, price
-- **RAWG API** — Rich metadata (ratings, tags, platforms)
-- **IGDB API** — Themes, game modes, age ratings
-- **HowLongToBeat** — Completion times
-- **Wikipedia** — Verified official sales figures (physical + digital)
-- **Steam Store API** — Player counts, review scores, pricing
-- **OpenCritic** — Aggregated review scores from 100+ outlets
-- **Gamedatacrunch** — Revenue estimates, concurrent players
+| Source | Type | Data |
+|--------|------|------|
+| **VGChartz 2024** (Kaggle) | Physical sales | ~64,000 games, worldwide sales |
+| **SteamSpy** | Digital estimates | ~46,000 Steam games, owners, reviews, playtime, price |
+| **RAWG API** | Metadata | Ratings, tags, platforms, playtime |
+| **IGDB API** | Metadata | Themes, game modes, age ratings, hypes, follows |
+| **HowLongToBeat** | Playtime | Main story, completionist, extras completion times |
+| **Wikipedia** | Verified sales | Official physical + digital figures |
+| **Steam Store API** | Store data | Player counts, review scores, pricing, DLC |
+| **OpenCritic** | Reviews | Aggregated scores from 100+ outlets |
+| **Gamedatacrunch** | Estimates | Revenue estimates, concurrent players |
 
 ## Tech Stack
 
 | Category | Technologies |
 |----------|-------------|
 | **Web Framework** | Streamlit |
-| **Data** | Pandas, NumPy |
+| **Data** | Pandas, NumPy, Pandera |
 | **Machine Learning** | LightGBM, XGBoost, CatBoost, Scikit-learn, Optuna |
-| **NLP** | DistilBERT (Transformers/HuggingFace), BERT Multilingual |
+| **NLP** | DistilBERT, BERT Multilingual (HuggingFace Transformers) |
 | **Visualization** | Plotly, SHAP |
 | **Data Collection** | kagglehub, steamspypi, rapidfuzz, requests |
-| **Code Quality** | ruff, pre-commit, pytest, GitHub Actions CI |
+| **Code Quality** | ruff, pre-commit, pytest (139 tests), GitHub Actions CI |
 | **Deployment** | Docker, Streamlit Cloud |
 
 ## Installation
@@ -71,16 +75,17 @@ The application has **11 interactive pages**:
 
 ```bash
 # Clone the repository
-git clone <repo-url>
-cd streamlit_video_games_project_april_2024
+git clone git@github.com-pro:adrienchabanelpro/streamlit-video-game-advanced.git
+cd streamlit-video-game-advanced
 
 # Create a virtual environment
 python -m venv .venv
 source .venv/bin/activate  # Linux/Mac
-# .venv\Scripts\activate   # Windows
 
 # Install dependencies
-pip install -r requirements.txt
+make install-dev    # All deps (dev, training, NLP, CI)
+# or
+make install        # Production only
 
 # Run the application
 make run
@@ -92,18 +97,18 @@ The app will be available at `http://localhost:8501`.
 
 ```bash
 make run            # Run the Streamlit app
-make test           # Run pytest suite
+make test           # Run pytest suite (139 tests)
 make lint           # Lint with ruff
 make format         # Format with ruff
-make train          # Run model training pipeline
-make collect-data   # Run data collection pipeline
+make train          # Run v3 training pipeline
+make collect-data   # Run 9-source data collection pipeline
 make clean          # Remove Python cache files
 ```
 
 ## Project Structure
 
 ```
-streamlit_video_games_project_april_2024/
+streamlit-video-game-advanced/
 ├── source/
 │   ├── main.py                      # Entry point, navigation (11 pages)
 │   ├── config.py                    # Paths, constants, Plotly layout
@@ -114,20 +119,30 @@ streamlit_video_games_project_april_2024/
 │   ├── data_validation.py           # Dataset schema validation
 │   ├── pages/                       # 11 Streamlit page modules
 │   └── ml/
-│       └── predict.py               # Inference pipeline (ensemble)
+│       └── predict.py               # Inference pipeline (v3 stacking + v2 fallback)
 ├── scripts/
 │   ├── training/                    # v3 modular training pipeline
-│   └── data_collection/             # Multi-source collection + merge
-├── data/                            # Datasets
-├── models/                          # Trained model artifacts
+│   │   ├── run_training.py          # Orchestrator (8-step pipeline)
+│   │   ├── data_prep.py             # Data loading, feature engineering
+│   │   ├── models.py                # Individual model trainers + Optuna
+│   │   ├── stacking.py              # Stacking ensemble (5 base + Ridge)
+│   │   └── evaluation.py            # Metrics, baseline comparison, SHAP
+│   └── data_collection/             # 9-source collection + merge pipeline
+│       ├── run_pipeline.py          # Pipeline orchestrator
+│       ├── merge_all_sources.py     # 9-source fuzzy merge
+│       ├── build_clean_dataset.py   # Quality pipeline + sample weights
+│       ├── estimate_sales.py        # Review-multiplier sales estimation
+│       └── collect_*.py             # Individual source collectors
+├── data/                            # Datasets (raw/ is gitignored)
+├── models/                          # Trained model artifacts (v3 + v2 fallback)
 ├── reports/                         # Training logs, SHAP plots
-├── tests/                           # pytest suite (124 tests)
+├── tests/                           # pytest suite (139 tests)
 ├── .claude/                         # Claude Code configuration
 ├── .github/workflows/ci.yml         # GitHub Actions CI
 ├── Makefile                         # Build automation
 ├── Dockerfile                       # Docker deployment
-├── requirements.txt                 # Production dependencies
-└── requirements-dev.txt             # Development dependencies
+├── requirements.txt                 # Production dependencies (15 packages)
+└── requirements-dev.txt             # Development dependencies (+12 packages)
 ```
 
 ## License

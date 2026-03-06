@@ -29,9 +29,6 @@ Thumbs.db
 
 # ML artifacts (regeneratable)
 catboost_info/
-mlruns/
-mlartifacts/
-mlflow.db
 
 # Environment files
 .env
