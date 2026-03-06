@@ -29,30 +29,54 @@ RANDOM_STATE = 42
 # ---------------------------------------------------------------------------
 # Optuna objective factories
 # ---------------------------------------------------------------------------
-def _cv_score(model: Any, X: np.ndarray, y: np.ndarray, n_splits: int = 5) -> float:
-    """Compute mean R2 across k-fold CV."""
+def _cv_score(
+    model: Any,
+    X: np.ndarray,
+    y: np.ndarray,
+    w: np.ndarray | None = None,
+    n_splits: int = 5,
+) -> float:
+    """Compute mean R2 across k-fold CV, with optional sample weights."""
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=RANDOM_STATE)
     scores = []
     for train_idx, val_idx in kf.split(X):
         model_copy = _clone_model(model)
         X_tr, X_val = X[train_idx], X[val_idx]
         y_tr, y_val = y[train_idx], y[val_idx]
+        w_tr = w[train_idx] if w is not None else None
 
         if hasattr(model_copy, "fit"):
             if isinstance(model_copy, lgb.LGBMRegressor):
                 model_copy.fit(
                     X_tr, y_tr,
+                    sample_weight=w_tr,
                     eval_set=[(X_val, y_val)],
                     callbacks=[lgb.early_stopping(50, verbose=False)],
                 )
             elif isinstance(model_copy, xgb.XGBRegressor):
-                model_copy.fit(X_tr, y_tr, eval_set=[(X_val, y_val)], verbose=False)
-            elif isinstance(model_copy, cb.CatBoostRegressor):
                 model_copy.fit(
                     X_tr, y_tr,
-                    eval_set=(X_val, y_val),
+                    sample_weight=w_tr,
+                    eval_set=[(X_val, y_val)],
+                    verbose=False,
+                )
+            elif isinstance(model_copy, cb.CatBoostRegressor):
+                pool_tr = cb.Pool(X_tr, y_tr, weight=w_tr)
+                pool_val = cb.Pool(X_val, y_val)
+                model_copy.fit(
+                    pool_tr,
+                    eval_set=pool_val,
                     early_stopping_rounds=50,
                 )
+            elif isinstance(model_copy, Pipeline):
+                # Pipeline models (RF, ElasticNet) — pass weight to final step
+                if w_tr is not None:
+                    final_name = model_copy.steps[-1][0]
+                    model_copy.fit(X_tr, y_tr, **{f"{final_name}__sample_weight": w_tr})
+                else:
+                    model_copy.fit(X_tr, y_tr)
+            elif isinstance(model_copy, HistGradientBoostingRegressor):
+                model_copy.fit(X_tr, y_tr, sample_weight=w_tr)
             else:
                 model_copy.fit(X_tr, y_tr)
 
@@ -72,7 +96,9 @@ def _clone_model(model: Any) -> Any:
         return model.__class__(**model.get_params())
 
 
-def objective_lgb(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
+def objective_lgb(
+    trial: optuna.Trial, X: np.ndarray, y: np.ndarray, w: np.ndarray | None = None,
+) -> float:
     """Optuna objective for LightGBM."""
     model = lgb.LGBMRegressor(
         learning_rate=trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
@@ -88,10 +114,12 @@ def objective_lgb(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
         verbosity=-1,
         n_jobs=-1,
     )
-    return _cv_score(model, X, y)
+    return _cv_score(model, X, y, w)
 
 
-def objective_xgb(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
+def objective_xgb(
+    trial: optuna.Trial, X: np.ndarray, y: np.ndarray, w: np.ndarray | None = None,
+) -> float:
     """Optuna objective for XGBoost."""
     model = xgb.XGBRegressor(
         learning_rate=trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
@@ -107,10 +135,12 @@ def objective_xgb(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
         verbosity=0,
         n_jobs=-1,
     )
-    return _cv_score(model, X, y)
+    return _cv_score(model, X, y, w)
 
 
-def objective_cb(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
+def objective_cb(
+    trial: optuna.Trial, X: np.ndarray, y: np.ndarray, w: np.ndarray | None = None,
+) -> float:
     """Optuna objective for CatBoost."""
     model = cb.CatBoostRegressor(
         learning_rate=trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
@@ -121,10 +151,12 @@ def objective_cb(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
         random_seed=RANDOM_STATE,
         verbose=0,
     )
-    return _cv_score(model, X, y)
+    return _cv_score(model, X, y, w)
 
 
-def objective_rf(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
+def objective_rf(
+    trial: optuna.Trial, X: np.ndarray, y: np.ndarray, w: np.ndarray | None = None,
+) -> float:
     """Optuna objective for Random Forest (with NaN imputation)."""
     model = Pipeline([
         ("imputer", SimpleImputer(strategy="median")),
@@ -138,10 +170,12 @@ def objective_rf(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
             n_jobs=-1,
         )),
     ])
-    return _cv_score(model, X, y)
+    return _cv_score(model, X, y, w)
 
 
-def objective_hgb(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
+def objective_hgb(
+    trial: optuna.Trial, X: np.ndarray, y: np.ndarray, w: np.ndarray | None = None,
+) -> float:
     """Optuna objective for HistGradientBoosting."""
     model = HistGradientBoostingRegressor(
         learning_rate=trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
@@ -152,10 +186,12 @@ def objective_hgb(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
         max_bins=trial.suggest_int("max_bins", 128, 255),
         random_state=RANDOM_STATE,
     )
-    return _cv_score(model, X, y)
+    return _cv_score(model, X, y, w)
 
 
-def objective_elastic(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
+def objective_elastic(
+    trial: optuna.Trial, X: np.ndarray, y: np.ndarray, w: np.ndarray | None = None,
+) -> float:
     """Optuna objective for ElasticNet (with NaN imputation)."""
     model = Pipeline([
         ("imputer", SimpleImputer(strategy="median")),
@@ -166,56 +202,78 @@ def objective_elastic(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> floa
             random_state=RANDOM_STATE,
         )),
     ])
-    return _cv_score(model, X, y)
+    return _cv_score(model, X, y, w)
 
 
 # ---------------------------------------------------------------------------
 # Model training with best params
 # ---------------------------------------------------------------------------
-def train_lgb(X: np.ndarray, y: np.ndarray, params: dict) -> lgb.LGBMRegressor:
+def train_lgb(
+    X: np.ndarray, y: np.ndarray, params: dict, w: np.ndarray | None = None,
+) -> lgb.LGBMRegressor:
     """Train LightGBM with given hyperparameters."""
     model = lgb.LGBMRegressor(**params, random_state=RANDOM_STATE, verbosity=-1, n_jobs=-1)
-    model.fit(X, y)
+    model.fit(X, y, sample_weight=w)
     return model
 
 
-def train_xgb(X: np.ndarray, y: np.ndarray, params: dict) -> xgb.XGBRegressor:
+def train_xgb(
+    X: np.ndarray, y: np.ndarray, params: dict, w: np.ndarray | None = None,
+) -> xgb.XGBRegressor:
     """Train XGBoost with given hyperparameters."""
     clean = {k: v for k, v in params.items() if k != "early_stopping_rounds"}
     model = xgb.XGBRegressor(**clean, random_state=RANDOM_STATE, verbosity=0, n_jobs=-1)
-    model.fit(X, y)
+    model.fit(X, y, sample_weight=w)
     return model
 
 
-def train_cb(X: np.ndarray, y: np.ndarray, params: dict) -> cb.CatBoostRegressor:
+def train_cb(
+    X: np.ndarray, y: np.ndarray, params: dict, w: np.ndarray | None = None,
+) -> cb.CatBoostRegressor:
     """Train CatBoost with given hyperparameters."""
     model = cb.CatBoostRegressor(**params, random_seed=RANDOM_STATE, verbose=0)
-    model.fit(X, y)
+    if w is not None:
+        pool = cb.Pool(X, y, weight=w)
+        model.fit(pool)
+    else:
+        model.fit(X, y)
     return model
 
 
-def train_rf(X: np.ndarray, y: np.ndarray, params: dict) -> Pipeline:
+def train_rf(
+    X: np.ndarray, y: np.ndarray, params: dict, w: np.ndarray | None = None,
+) -> Pipeline:
     """Train Random Forest with NaN imputation pipeline."""
     model = Pipeline([
         ("imputer", SimpleImputer(strategy="median")),
         ("rf", RandomForestRegressor(**params, random_state=RANDOM_STATE, n_jobs=-1)),
     ])
-    model.fit(X, y)
+    if w is not None:
+        model.fit(X, y, rf__sample_weight=w)
+    else:
+        model.fit(X, y)
     return model
 
 
-def train_hgb(X: np.ndarray, y: np.ndarray, params: dict) -> HistGradientBoostingRegressor:
+def train_hgb(
+    X: np.ndarray, y: np.ndarray, params: dict, w: np.ndarray | None = None,
+) -> HistGradientBoostingRegressor:
     """Train HistGradientBoosting with given hyperparameters."""
     model = HistGradientBoostingRegressor(**params, random_state=RANDOM_STATE)
-    model.fit(X, y)
+    model.fit(X, y, sample_weight=w)
     return model
 
 
-def train_elastic(X: np.ndarray, y: np.ndarray, params: dict) -> Pipeline:
+def train_elastic(
+    X: np.ndarray, y: np.ndarray, params: dict, w: np.ndarray | None = None,
+) -> Pipeline:
     """Train ElasticNet with NaN imputation pipeline."""
     model = Pipeline([
         ("imputer", SimpleImputer(strategy="median")),
         ("elastic", ElasticNet(**params, max_iter=5000, random_state=RANDOM_STATE)),
     ])
-    model.fit(X, y)
+    if w is not None:
+        model.fit(X, y, elastic__sample_weight=w)
+    else:
+        model.fit(X, y)
     return model

@@ -20,7 +20,15 @@ ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "data"
 
 TARGET = "Global_Sales"
+TARGET_ESTIMATED = "estimated_total_sales"
 RANDOM_STATE = 42
+
+# Sample weights by sales confidence tier
+CONFIDENCE_WEIGHTS = {
+    "high": 2.0,
+    "medium": 1.0,
+    "none": 0.5,
+}
 
 # Regional sales columns — NEVER used as features (data leakage)
 REGIONAL_COLS = ["NA_Sales", "EU_Sales", "JP_Sales", "Other_Sales"]
@@ -34,6 +42,12 @@ DROP_COLS = [
     "igdb_themes", "igdb_game_modes", "igdb_perspectives", "igdb_franchises",
     "steam_appid", "steam_owners", "steam_tags",
     "query_name", "hltb_name",
+    # Sales estimation metadata (not features)
+    "quality_tier", "sales_provenance", "sales_confidence",
+    "review_estimated_sales", "review_multiplier",
+    "wiki_sales_millions", "wiki_platform", "wiki_publisher",
+    "wiki_developer", "wiki_release_date", "wiki_source_page", "wiki_sales_type",
+    "steam_store_appid",
 ]
 
 
@@ -50,30 +64,65 @@ def load_dataset(path: Path | None = None) -> pd.DataFrame:
     return df
 
 
-def clean_data(df: pd.DataFrame) -> pd.DataFrame:
-    """Clean raw data: drop leakage, handle types, remove NaN/zero target."""
+def clean_data(
+    df: pd.DataFrame,
+    target: str = TARGET,
+) -> pd.DataFrame:
+    """Clean raw data: drop leakage, handle types, remove NaN/zero target.
+
+    Parameters
+    ----------
+    target:
+        Target column to use. Either TARGET (Global_Sales) or
+        TARGET_ESTIMATED (estimated_total_sales).
+    """
     df = df.copy()
 
     # Drop rows missing target or key categoricals
-    df = df.dropna(subset=[TARGET])
+    df = df.dropna(subset=[target])
     df = df.dropna(subset=["Publisher", "Year"])
 
     # Filter zero-sales rows: use quality tiers if available, else simple > 0
     if "quality_tier" in df.columns:
-        valid_tiers = ["tier_1_verified", "tier_2_physical", "tier_3_marginal"]
+        if target == TARGET_ESTIMATED:
+            # Include tiers 1-4 (verified + physical + estimated + marginal)
+            valid_tiers = [
+                "tier_1_verified", "tier_2_physical",
+                "tier_3_estimated", "tier_4_marginal",
+            ]
+        else:
+            # Original behavior: only tiers with VGChartz physical sales
+            valid_tiers = [
+                "tier_1_verified", "tier_2_physical",
+                "tier_3_estimated", "tier_4_marginal",
+            ]
         before = len(df)
         df = df[df["quality_tier"].isin(valid_tiers)]
         logger.info(f"Quality tier filter: {before:,} → {len(df):,} rows")
     else:
         before = len(df)
-        df = df[df[TARGET] > 0]
+        df = df[df[target] > 0]
         logger.info(f"Zero-sales filter: {before:,} → {len(df):,} rows")
+
+    # Filter to rows with positive target
+    before = len(df)
+    df = df[df[target] > 0]
+    if len(df) < before:
+        logger.info(f"Zero-target filter: {before:,} → {len(df):,} rows")
+
+    # Build sample weights from confidence tiers
+    if "sales_confidence" in df.columns:
+        df["sample_weight"] = df["sales_confidence"].map(CONFIDENCE_WEIGHTS).fillna(1.0)
+    else:
+        df["sample_weight"] = 1.0
 
     # Convert Year to int
     df["Year"] = df["Year"].astype(int)
 
     # Drop regional sales (leakage) and non-feature columns
-    cols_to_drop = REGIONAL_COLS + DROP_COLS
+    # Also drop the non-active target to avoid leakage
+    other_target = TARGET_ESTIMATED if target == TARGET else TARGET
+    cols_to_drop = REGIONAL_COLS + DROP_COLS + [other_target]
     cols_to_drop += [c for c in df.columns if c.endswith("_match_score")]
     df = df.drop(columns=[c for c in cols_to_drop if c in df.columns], errors="ignore")
 
@@ -94,21 +143,21 @@ def temporal_split(
 # ---------------------------------------------------------------------------
 # Feature engineering
 # ---------------------------------------------------------------------------
-def compute_train_stats(df_train: pd.DataFrame) -> dict:
+def compute_train_stats(df_train: pd.DataFrame, target: str = TARGET) -> dict:
     """Compute all feature engineering statistics from training data only."""
     stats: dict = {}
 
-    # Mean Global_Sales by Genre / Platform
-    stats["genre_means"] = df_train.groupby("Genre")[TARGET].mean().to_dict()
-    stats["platform_means"] = df_train.groupby("Platform")[TARGET].mean().to_dict()
-    stats["global_sales_mean"] = float(df_train[TARGET].mean())
+    # Mean sales by Genre / Platform
+    stats["genre_means"] = df_train.groupby("Genre")[target].mean().to_dict()
+    stats["platform_means"] = df_train.groupby("Platform")[target].mean().to_dict()
+    stats["global_sales_mean"] = float(df_train[target].mean())
 
     # Cumulative sales by Genre and Year
     stats["cumsum_genre"] = {}
     for genre in df_train["Genre"].unique():
         data = (
             df_train[df_train["Genre"] == genre]
-            .groupby("Year")[TARGET].sum().sort_index().cumsum()
+            .groupby("Year")[target].sum().sort_index().cumsum()
         )
         stats["cumsum_genre"][genre] = data.to_dict()
 
@@ -116,34 +165,34 @@ def compute_train_stats(df_train: pd.DataFrame) -> dict:
     for platform in df_train["Platform"].unique():
         data = (
             df_train[df_train["Platform"] == platform]
-            .groupby("Year")[TARGET].sum().sort_index().cumsum()
+            .groupby("Year")[target].sum().sort_index().cumsum()
         )
         stats["cumsum_platform"][platform] = data.to_dict()
 
     # --- v3 track record features ---
     # Publisher historical performance (train data only, per year)
     pub_stats = df_train.groupby("Publisher").agg(
-        pub_avg_sales=(TARGET, "mean"),
-        pub_game_count=(TARGET, "count"),
-        pub_total_sales=(TARGET, "sum"),
+        pub_avg_sales=(target, "mean"),
+        pub_game_count=(target, "count"),
+        pub_total_sales=(target, "sum"),
     ).to_dict("index")
     stats["publisher_stats"] = pub_stats
 
     # Publisher hit rate (% of games above median)
-    median_sales = df_train[TARGET].median()
+    median_sales = df_train[target].median()
     stats["median_sales"] = float(median_sales)
 
     pub_hits: dict[str, float] = {}
     for pub, group in df_train.groupby("Publisher"):
-        hits = (group[TARGET] > median_sales).sum()
+        hits = (group[target] > median_sales).sum()
         pub_hits[str(pub)] = float(hits / len(group)) if len(group) > 0 else 0.0
     stats["publisher_hit_rate"] = pub_hits
 
     # Developer historical performance
     if "developer" in df_train.columns:
         dev_stats = df_train.groupby("developer").agg(
-            dev_avg_sales=(TARGET, "mean"),
-            dev_game_count=(TARGET, "count"),
+            dev_avg_sales=(target, "mean"),
+            dev_game_count=(target, "count"),
         ).to_dict("index")
         stats["developer_stats"] = dev_stats
 
@@ -156,7 +205,7 @@ def compute_train_stats(df_train: pd.DataFrame) -> dict:
     stats["genre_year_count"] = {f"{g}_{y}": v for (g, y), v in genre_year_count.items()}
 
     # Genre market share per year
-    total_by_year = df_train.groupby("Year")[TARGET].sum().to_dict()
+    total_by_year = df_train.groupby("Year")[target].sum().to_dict()
     stats["total_sales_by_year"] = total_by_year
 
     genre_sales_by_year: dict[str, dict] = {}
@@ -164,7 +213,7 @@ def compute_train_stats(df_train: pd.DataFrame) -> dict:
         if genre not in genre_sales_by_year:
             genre_sales_by_year[str(genre)] = {}
         total = total_by_year.get(year, 1)
-        genre_sales_by_year[str(genre)][int(year)] = float(group[TARGET].sum() / total) if total > 0 else 0.0
+        genre_sales_by_year[str(genre)][int(year)] = float(group[target].sum() / total) if total > 0 else 0.0
     stats["genre_market_share"] = genre_sales_by_year
 
     # Dropdown values for prediction UI
@@ -405,12 +454,13 @@ def prepare_training_data(
     df_test: pd.DataFrame,
     stats: dict,
     log_transform: bool = True,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[str], StandardScaler, ce.TargetEncoder]:
+    target: str = TARGET,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[str], StandardScaler, ce.TargetEncoder]:
     """Full preparation: feature engineering + encoding + scaling.
 
     Returns
     -------
-    X_train, y_train, X_test, y_test_raw, feature_names, scaler, encoder
+    X_train, y_train, X_test, y_test_raw, w_train, feature_names, scaler, encoder
     """
     # Feature engineering
     df_train = engineer_features(df_train, stats)
@@ -419,7 +469,7 @@ def prepare_training_data(
     # Target-encode Publisher
     encoder = ce.TargetEncoder(cols=["Publisher"], smoothing=10)
     df_train["Publisher_encoded"] = encoder.fit_transform(
-        df_train[["Publisher"]], df_train[TARGET]
+        df_train[["Publisher"]], df_train[target]
     )["Publisher"]
     df_test["Publisher_encoded"] = encoder.transform(df_test[["Publisher"]])["Publisher"]
 
@@ -432,12 +482,15 @@ def prepare_training_data(
     X_train = scaler.fit_transform(df_train[features])
     X_test = scaler.transform(df_test[features])
 
-    y_train_raw = df_train[TARGET].values
-    y_test_raw = df_test[TARGET].values
+    y_train_raw = df_train[target].values
+    y_test_raw = df_test[target].values
+
+    # Sample weights
+    w_train = df_train["sample_weight"].values if "sample_weight" in df_train.columns else np.ones(len(df_train))
 
     if log_transform:
         y_train = np.log1p(y_train_raw)
     else:
         y_train = y_train_raw
 
-    return X_train, y_train, X_test, y_test_raw, features, scaler, encoder
+    return X_train, y_train, X_test, y_test_raw, w_train, features, scaler, encoder

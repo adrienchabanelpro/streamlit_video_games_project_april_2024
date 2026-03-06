@@ -22,6 +22,7 @@ def generate_oof_predictions(
     models: dict[str, Any],
     X_train: np.ndarray,
     y_train: np.ndarray,
+    w_train: np.ndarray | None = None,
     n_splits: int = 5,
 ) -> np.ndarray:
     """Generate out-of-fold predictions for each base model.
@@ -32,6 +33,8 @@ def generate_oof_predictions(
         Dict of {name: (train_func, best_params)} for each base model.
     X_train, y_train:
         Training data.
+    w_train:
+        Optional sample weights.
     n_splits:
         Number of CV folds.
 
@@ -48,9 +51,10 @@ def generate_oof_predictions(
         logger.info(f"  OOF fold {fold_idx + 1}/{n_splits}")
         X_tr, X_val = X_train[train_idx], X_train[val_idx]
         y_tr = y_train[train_idx]
+        w_tr = w_train[train_idx] if w_train is not None else None
 
         for model_idx, (name, (train_func, params)) in enumerate(models.items()):
-            model = train_func(X_tr, y_tr, params)
+            model = train_func(X_tr, y_tr, params, w=w_tr)
             oof_preds[val_idx, model_idx] = model.predict(X_val)
 
     return oof_preds
@@ -102,6 +106,7 @@ def train_stacking_ensemble(
     model_configs: dict[str, tuple],
     X_train: np.ndarray,
     y_train: np.ndarray,
+    w_train: np.ndarray | None = None,
     n_splits: int = 5,
 ) -> tuple[list[Any], RidgeCV]:
     """Full stacking pipeline: OOF predictions → meta-learner → final models.
@@ -112,6 +117,8 @@ def train_stacking_ensemble(
         Dict of {name: (train_func, best_params)}.
     X_train, y_train:
         Training data.
+    w_train:
+        Optional sample weights.
     n_splits:
         CV folds for OOF generation.
 
@@ -120,7 +127,7 @@ def train_stacking_ensemble(
     (trained_base_models, meta_learner)
     """
     logger.info("Generating out-of-fold predictions...")
-    oof_preds = generate_oof_predictions(model_configs, X_train, y_train, n_splits)
+    oof_preds = generate_oof_predictions(model_configs, X_train, y_train, w_train, n_splits)
 
     logger.info("Training meta-learner on OOF predictions...")
     meta = train_meta_learner(oof_preds, y_train)
@@ -129,7 +136,7 @@ def train_stacking_ensemble(
     trained_models = []
     for name, (train_func, params) in model_configs.items():
         logger.info(f"  Training {name}...")
-        model = train_func(X_train, y_train, params)
+        model = train_func(X_train, y_train, params, w=w_train)
         trained_models.append(model)
 
     return trained_models, meta

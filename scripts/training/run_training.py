@@ -26,6 +26,7 @@ import shap
 
 from scripts.training.data_prep import (
     TARGET,
+    TARGET_ESTIMATED,
     clean_data,
     compute_train_stats,
     load_dataset,
@@ -74,6 +75,7 @@ def _tune_model(
     y: np.ndarray,
     n_trials: int,
     seed_offset: int = 0,
+    w: np.ndarray | None = None,
 ) -> dict:
     """Run Optuna tuning for a single model."""
     logger.info(f"  Tuning {name} ({n_trials} trials)...")
@@ -82,7 +84,7 @@ def _tune_model(
         sampler=optuna.samplers.TPESampler(seed=RANDOM_STATE + seed_offset),
     )
     study.optimize(
-        lambda trial: objective_fn(trial, X, y),
+        lambda trial: objective_fn(trial, X, y, w),
         n_trials=n_trials,
         show_progress_bar=True,
     )
@@ -98,16 +100,17 @@ def main(
     n_trials_hgb: int = 20,
     n_trials_elastic: int = 20,
     split_year: int = SPLIT_YEAR,
+    target: str = TARGET,
 ) -> None:
     """Run the full v3 training pipeline."""
     logger.info("=" * 60)
-    logger.info("Video Game Sales — Training Pipeline v3 (Stacking Ensemble)")
+    logger.info(f"Video Game Sales — Training Pipeline v3 (target={target})")
     logger.info("=" * 60)
 
     # ---- 1. Load & clean ----
     logger.info("\n[1/8] Loading and cleaning data...")
     df = load_dataset()
-    df = clean_data(df)
+    df = clean_data(df, target=target)
     logger.info(f"  {len(df):,} rows, Year range: {df['Year'].min()}-{df['Year'].max()}")
 
     # ---- 2. Split ----
@@ -116,22 +119,24 @@ def main(
 
     # ---- 3. Feature engineering + preparation ----
     logger.info("\n[3/8] Feature engineering (train stats only)...")
-    train_stats = compute_train_stats(df_train)
-    X_train, y_train, X_test, y_test_raw, features, scaler, encoder = (
-        prepare_training_data(df_train, df_test, train_stats, log_transform=LOG_TRANSFORM)
+    train_stats = compute_train_stats(df_train, target=target)
+    X_train, y_train, X_test, y_test_raw, w_train, features, scaler, encoder = (
+        prepare_training_data(df_train, df_test, train_stats, log_transform=LOG_TRANSFORM, target=target)
     )
     logger.info(f"  {len(features)} features, X_train shape: {X_train.shape}")
+    if w_train is not None and not np.all(w_train == 1.0):
+        logger.info(f"  Sample weights active: min={w_train.min():.1f}, max={w_train.max():.1f}, mean={w_train.mean():.2f}")
 
     # ---- 4. Optuna tuning for all models ----
     logger.info("\n[4/8] Hyperparameter tuning...")
     optuna.logging.set_verbosity(optuna.logging.WARNING)
 
-    best_lgb = _tune_model("LightGBM", objective_lgb, X_train, y_train, n_trials_lgb, 0)
-    best_xgb = _tune_model("XGBoost", objective_xgb, X_train, y_train, n_trials_xgb, 1)
-    best_cb = _tune_model("CatBoost", objective_cb, X_train, y_train, n_trials_cb, 2)
-    best_rf = _tune_model("RandomForest", objective_rf, X_train, y_train, n_trials_rf, 3)
-    best_hgb = _tune_model("HistGBR", objective_hgb, X_train, y_train, n_trials_hgb, 4)
-    best_elastic = _tune_model("ElasticNet", objective_elastic, X_train, y_train, n_trials_elastic, 5)
+    best_lgb = _tune_model("LightGBM", objective_lgb, X_train, y_train, n_trials_lgb, 0, w=w_train)
+    best_xgb = _tune_model("XGBoost", objective_xgb, X_train, y_train, n_trials_xgb, 1, w=w_train)
+    best_cb = _tune_model("CatBoost", objective_cb, X_train, y_train, n_trials_cb, 2, w=w_train)
+    best_rf = _tune_model("RandomForest", objective_rf, X_train, y_train, n_trials_rf, 3, w=w_train)
+    best_hgb = _tune_model("HistGBR", objective_hgb, X_train, y_train, n_trials_hgb, 4, w=w_train)
+    best_elastic = _tune_model("ElasticNet", objective_elastic, X_train, y_train, n_trials_elastic, 5, w=w_train)
 
     # ---- 5. Stacking ensemble ----
     logger.info("\n[5/8] Training stacking ensemble (5 base models + Ridge meta-learner)...")
@@ -146,12 +151,12 @@ def main(
     }
 
     base_models, meta_learner = train_stacking_ensemble(
-        model_configs, X_train, y_train, n_splits=5
+        model_configs, X_train, y_train, w_train=w_train, n_splits=5
     )
 
     # Also train ElasticNet as a separate baseline
     logger.info("  Training ElasticNet baseline...")
-    elastic_model = train_elastic(X_train, y_train, best_elastic)
+    elastic_model = train_elastic(X_train, y_train, best_elastic, w=w_train)
 
     # ---- 6. Evaluate ----
     logger.info("\n[6/8] Evaluating on test set...")
@@ -191,7 +196,7 @@ def main(
         base_models, meta_learner, elastic_model,
         scaler, encoder, train_stats, features,
         {name: best for name, (_, best) in zip(model_names, model_configs.values())},
-        best_elastic, all_metrics, split_year,
+        best_elastic, all_metrics, split_year, target=target,
     )
 
     logger.info("\n" + "=" * 60)
@@ -235,6 +240,7 @@ def _save_artifacts(
     elastic_params: dict,
     all_metrics: dict,
     split_year: int,
+    target: str = TARGET,
 ) -> None:
     """Save all model artifacts for inference and reproducibility."""
     import catboost as cb
@@ -290,7 +296,7 @@ def _save_artifacts(
         "random_state": RANDOM_STATE,
         "features": features,
         "n_features": len(features),
-        "target": TARGET,
+        "target": target,
         "best_params": {**all_params, "elastic_net": elastic_params},
         "metrics": all_metrics,
         "stacking_meta_weights": meta_learner.coef_.tolist(),
@@ -304,9 +310,20 @@ def _save_artifacts(
 
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Training pipeline v3")
+    parser.add_argument(
+        "--target",
+        choices=[TARGET, TARGET_ESTIMATED],
+        default=TARGET,
+        help=f"Target column (default: {TARGET})",
+    )
+    args = parser.parse_args()
+
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
         datefmt="%H:%M:%S",
     )
-    main()
+    main(target=args.target)
